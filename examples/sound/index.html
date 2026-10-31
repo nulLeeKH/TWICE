@@ -1,0 +1,40 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>@twice/sound demo</title>
+<style>
+  body { font: 16px/1.5 system-ui, sans-serif; max-width: 640px; margin: 48px auto; padding: 0 16px; }
+  button { font: inherit; margin: 4px 4px 4px 0; padding: 8px 14px; }
+  pre { background: #f2f2f2; padding: 12px; overflow-x: auto; }
+</style>
+<h1>@twice/sound</h1>
+<p>No extension, no OCR, no model: a plain page hands scene JSON to the engine. Any reader app, novel platform or e-reader can do the same.</p>
+<div id="scenes"></div>
+<p><button id="sfx">SFX: sword_clash</button> <button id="stop">Stop</button></p>
+<pre id="json"></pre>
+<script type="module">
+  // Served from the repository root (e.g. `npx serve .`), so the package is imported as plain files.
+  import { createEngine, normalizeSegment } from "../../packages/sound/index.js";
+
+  const SCENES = {
+    "Calm morning": { mood: "calm", intensity: 0.3, ambience: [{ engine: "bio", variant: "songbird", p1: 0.5, p2: 0.5, p3: 0.4 }] },
+    "Rain by the fire": { mood: "sad", intensity: 0.4, ambience: [{ engine: "particle", variant: "glass", p1: 0.6, p2: 0.5, p3: 0, indoor: true }, { engine: "fire", p1: 0.5, p2: 0.5, p3: 0.2 }] },
+    "Battle": { mood: "battle", intensity: 0.85, ambience: [{ engine: "aero", variant: "wind", p1: 0.6, p2: 0.5, p3: 0.4 }] },
+  };
+  let engine = null;
+  const play = (scene) => {
+    engine ??= createEngine();
+    engine.ctx?.resume?.();
+    const s = normalizeSegment(scene);
+    engine.setScene(s);
+    document.getElementById("json").textContent = JSON.stringify(scene, null, 2);
+  };
+  for (const [name, scene] of Object.entries(SCENES)) {
+    const b = document.createElement("button");
+    b.textContent = name;
+    b.onclick = () => play(scene);
+    document.getElementById("scenes").append(b);
+  }
+  document.getElementById("sfx").onclick = () => engine?.sfx("sword_clash", 0.8);
+  document.getElementById("stop").onclick = () => { engine?.close(); engine = null; };
+</script>

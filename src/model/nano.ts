@@ -1,4 +1,4 @@
-import { SYSTEM, analyze } from "./decision.js";
+import { SYSTEM, analyze } from "@twice/director";
 import { CHAPTER_SCHEMA, CHAPTER_SYSTEM, type ChapterChunk, type ChapterPlanRow } from "../domain/chapter";
 import type { AnalysisProgress, AnalysisResult, Availability, Batch, Decision, ModelState, Playback } from "../domain/types";
 

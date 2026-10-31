@@ -1,0 +1,15 @@
+{
+  "name": "@twice/director",
+  "version": "0.1.3",
+  "private": true,
+  "type": "module",
+  "description": "Story text in, scene JSON out: the LLM prompt, response schema, streaming parse and text grounding. Bring your own model session.",
+  "exports": {
+    ".": "./index.js",
+    "./scene-from-text": "./scene-from-text.js"
+  },
+  "dependencies": {
+    "@twice/sound": "workspace:*"
+  },
+  "license": "MIT"
+}

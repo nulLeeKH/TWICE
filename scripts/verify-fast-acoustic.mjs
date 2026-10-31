@@ -1,9 +1,9 @@
 // Dependency-free smoke test. Run from project root:
 // node scripts/verify-fast-acoustic.mjs
 import assert from 'node:assert/strict';
-import { SFX_TYPES } from '../src/audio/sfx.js';
+import { SFX_TYPES } from '@twice/sound';
 import { MOODS, SFX, SFX_GAP_S, MUSIC_HOLD_S, FAMILY_HOLD_S, normalizeSegment, shouldChangeMusic } from '../src/domain/score.js';
-import { arrangement, percussionPattern, compose } from '../src/audio/music.js';
+import { arrangement, percussionPattern, compose } from '@twice/sound';
 const acoustic = new Set(['strings', 'cello', 'harp', 'piano', 'marimba', 'timpani', 'bass_drum', 'frame_drum']);
 assert.equal(MUSIC_HOLD_S, 6);
 assert.equal(FAMILY_HOLD_S, 10);

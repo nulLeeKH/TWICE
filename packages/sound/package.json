@@ -1,0 +1,12 @@
+{
+  "name": "@twice/sound",
+  "version": "0.1.3",
+  "private": true,
+  "type": "module",
+  "description": "Scene JSON in, music, ambience and SFX out. Pure Web Audio: no browser-extension, DOM or network APIs.",
+  "exports": {
+    ".": "./index.js",
+    "./scene": "./scene.js"
+  },
+  "license": "MIT"
+}

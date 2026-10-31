@@ -1,7 +1,7 @@
 // Dependency-free music-engine smoke test, without Chrome or external API.
 import assert from 'node:assert/strict';
-import { acousticVoices, acousticCacheStats } from '../src/audio/acoustic.js';
-import { compose, arrangement, percussionPattern, INSTRUMENTS } from '../src/audio/music.js';
+import { acousticVoices, acousticCacheStats } from '../packages/sound/acoustic.js';
+import { compose, arrangement, percussionPattern, INSTRUMENTS } from '@twice/sound';
 import { MOODS } from '../src/domain/score.js';
 class Param {
   constructor(value=0) {this.value=value;}

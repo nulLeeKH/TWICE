@@ -1,6 +1,6 @@
 // Music: a mood preset becomes a composed 16- or 32-bar piece (chords, melody, arrangement); the sequencer plays
 // pieces back to back and crossfades between moods at a bar line. No browser globals at module scope.
-import { MOODS } from "../domain/score.js";
+import { MOODS } from "./scene.js";
 import { acousticVoices } from "./acoustic.js";
 
 const hz = (midi) => 440 * 2 ** ((midi - 69) / 12);
