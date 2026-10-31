@@ -1,0 +1,441 @@
+{
+  "reviewed": "2026-11-01",
+  "components": [
+    {
+      "name": "wxt",
+      "version": "0.21.5",
+      "license": "MIT",
+      "source": "https://github.com/wxt-dev/wxt/blob/main/LICENSE",
+      "licenseFiles": [
+        "public/licenses/wxt/LICENSE"
+      ],
+      "kind": "runtime-package",
+      "package": "wxt"
+    },
+    {
+      "name": "@wxt-dev/browser",
+      "version": "0.3.7",
+      "license": "MIT",
+      "source": "https://github.com/wxt-dev/wxt/blob/main/LICENSE",
+      "licenseFiles": [
+        "public/licenses/wxt/LICENSE"
+      ],
+      "kind": "runtime-package",
+      "package": "@wxt-dev/browser"
+    },
+    {
+      "name": "@wxt-dev/storage",
+      "version": "1.3.0",
+      "license": "MIT",
+      "source": "https://github.com/wxt-dev/wxt/blob/main/LICENSE",
+      "licenseFiles": [
+        "public/licenses/wxt/LICENSE"
+      ],
+      "kind": "runtime-package",
+      "package": "@wxt-dev/storage"
+    },
+    {
+      "name": "superlock",
+      "version": "1.4.13",
+      "license": "MIT",
+      "source": "https://www.npmjs.com/package/superlock/v/1.4.13",
+      "licenseFiles": [
+        "public/licenses/superlock/LICENSE.md"
+      ],
+      "kind": "runtime-package",
+      "package": "superlock"
+    },
+    {
+      "name": "vite",
+      "version": "8.3.5",
+      "license": "MIT",
+      "source": "https://www.npmjs.com/package/vite/v/8.3.5",
+      "licenseFiles": [
+        "public/licenses/vite/LICENSE.md"
+      ],
+      "kind": "runtime-package",
+      "package": "vite"
+    },
+    {
+      "name": "rolldown",
+      "version": "1.2.16",
+      "license": "MIT",
+      "source": "https://www.npmjs.com/package/rolldown/v/1.2.16",
+      "licenseFiles": [
+        "public/licenses/rolldown/LICENSE"
+      ],
+      "kind": "runtime-package",
+      "package": "rolldown"
+    },
+    {
+      "name": "dequal (embedded in @wxt-dev/storage)",
+      "version": "2.0.3",
+      "license": "MIT",
+      "source": "https://github.com/lukeed/dequal/tree/2.0.3",
+      "licenseFiles": [
+        "public/licenses/dequal/LICENSE"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "Tesseract.js",
+      "version": "7.0.0",
+      "license": "Apache-2.0",
+      "source": "https://github.com/naptha/tesseract.js/tree/42eae669e4b3a66429d8516f078912cc747a89df",
+      "licenseFiles": [
+        "public/vendor/tesseract/LICENSE-tesseract.js.md",
+        "public/vendor/tesseract/tesseract.min.js.LICENSE.txt",
+        "public/vendor/tesseract/worker.min.js.LICENSE.txt"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "tesseract.js-core",
+      "version": "7.0.0",
+      "license": "Apache-2.0",
+      "source": "https://github.com/naptha/tesseract.js-core/tree/acffef2b66eb44a31df297e11d905f4b39001068",
+      "licenseFiles": [
+        "public/vendor/tesseract/core/LICENSE"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "regenerator-runtime",
+      "version": "embedded in Tesseract.js 7.0.0",
+      "license": "MIT",
+      "source": "git+https://github.com/facebook/regenerator.git#main",
+      "licenseFiles": [
+        "public/licenses/tesseract-js/regenerator-runtime.txt"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "zlibjs",
+      "version": "embedded in Tesseract.js 7.0.0",
+      "license": "MIT",
+      "source": "git://github.com/imaya/zlib.js.git",
+      "licenseFiles": [
+        "public/licenses/tesseract-js/zlibjs.txt"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "wasm-feature-detect",
+      "version": "embedded in Tesseract.js 7.0.0",
+      "license": "Apache-2.0",
+      "source": "git+https://github.com/GoogleChromeLabs/wasm-feature-detect.git",
+      "licenseFiles": [
+        "public/licenses/tesseract-js/wasm-feature-detect.txt"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "bmp-js",
+      "version": "embedded in Tesseract.js 7.0.0",
+      "license": "MIT",
+      "source": "git+https://github.com/shaozilee/bmp-js.git",
+      "licenseFiles": [
+        "public/licenses/tesseract-js/bmp-js.txt"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "is-url",
+      "version": "embedded in Tesseract.js 7.0.0",
+      "license": "MIT",
+      "source": "git+https://github.com/segmentio/is-url.git",
+      "licenseFiles": [
+        "public/licenses/tesseract-js/is-url.txt"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "buffer",
+      "version": "embedded in Tesseract.js 7.0.0",
+      "license": "MIT",
+      "source": "git://github.com/feross/buffer.git",
+      "licenseFiles": [
+        "public/licenses/tesseract-js/buffer.txt"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "base64-js",
+      "version": "embedded in Tesseract.js 7.0.0",
+      "license": "MIT",
+      "source": "git://github.com/beatgammit/base64-js.git",
+      "licenseFiles": [
+        "public/licenses/tesseract-js/base64-js.txt"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "ieee754",
+      "version": "embedded in Tesseract.js 7.0.0",
+      "license": "BSD-3-Clause",
+      "source": "git://github.com/feross/ieee754.git",
+      "licenseFiles": [
+        "public/licenses/tesseract-js/ieee754.txt"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "idb-keyval",
+      "version": "embedded in Tesseract.js 7.0.0",
+      "license": "Apache-2.0",
+      "source": "https://github.com/jakearchibald/idb-keyval",
+      "licenseFiles": [
+        "public/licenses/tesseract-js/idb-keyval.txt",
+        "public/vendor/tesseract/LICENSE-tesseract.js.md"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "tesseract",
+      "version": "2a9c1c49c360462733c386d2a44fcd22c4e21411",
+      "license": "Apache-2.0",
+      "source": "https://raw.githubusercontent.com/Balearica/tesseract/2a9c1c49c360462733c386d2a44fcd22c4e21411/LICENSE",
+      "licenseFiles": [
+        "public/licenses/tesseract-core/tesseract-native.txt"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "leptonica",
+      "version": "4af068b56a9674da915debea4ed7e1b9885b17e8",
+      "license": "BSD-2-Clause",
+      "source": "https://raw.githubusercontent.com/DanBloomberg/leptonica/4af068b56a9674da915debea4ed7e1b9885b17e8/leptonica-license.txt",
+      "licenseFiles": [
+        "public/licenses/tesseract-core/leptonica.txt"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "giflib",
+      "version": "fa37672085ce4b3d62c51627ab3c8cf2dda8009a",
+      "license": "MIT",
+      "source": "https://raw.githubusercontent.com/mirrorer/giflib/fa37672085ce4b3d62c51627ab3c8cf2dda8009a/COPYING",
+      "licenseFiles": [
+        "public/licenses/tesseract-core/giflib.txt"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "libjpeg",
+      "version": "6c0fcb8ddee365e7abc4d332662b06900612e923",
+      "license": "IJG",
+      "source": "https://raw.githubusercontent.com/LuaDist/libjpeg/6c0fcb8ddee365e7abc4d332662b06900612e923/README",
+      "licenseFiles": [
+        "public/licenses/tesseract-core/libjpeg.txt"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "libpng",
+      "version": "a37d4836519517bdce6cb9d956092321eca3e73b",
+      "license": "libpng-2.0",
+      "source": "https://raw.githubusercontent.com/glennrp/libpng/a37d4836519517bdce6cb9d956092321eca3e73b/LICENSE",
+      "licenseFiles": [
+        "public/licenses/tesseract-core/libpng.txt"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "libtiff",
+      "version": "b51bb157123264e26d34c09cc673d213aea61fc7",
+      "license": "libtiff",
+      "source": "https://raw.githubusercontent.com/libsdl-org/libtiff/b51bb157123264e26d34c09cc673d213aea61fc7/COPYRIGHT",
+      "licenseFiles": [
+        "public/licenses/tesseract-core/libtiff.txt"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "libwebp",
+      "version": "20ef03ee351d4ff03fc5ff3ec4804a879d1b9d5c",
+      "license": "BSD-3-Clause",
+      "source": "https://raw.githubusercontent.com/webmproject/libwebp/20ef03ee351d4ff03fc5ff3ec4804a879d1b9d5c/COPYING",
+      "licenseFiles": [
+        "public/licenses/tesseract-core/libwebp.txt",
+        "public/licenses/tesseract-core/libwebp-PATENTS.txt"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "openlibm",
+      "version": "ae2d91698508701c83cab83714d42a1146dccf85",
+      "license": "MIT/BSD/ISC/SunPro (see full text)",
+      "source": "https://raw.githubusercontent.com/JuliaMath/openlibm/ae2d91698508701c83cab83714d42a1146dccf85/LICENSE.md",
+      "licenseFiles": [
+        "public/licenses/tesseract-core/openlibm.txt"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "zlib",
+      "version": "21767c654d31d2dccdde4330529775c6c5fd5389",
+      "license": "Zlib",
+      "source": "https://raw.githubusercontent.com/madler/zlib/21767c654d31d2dccdde4330529775c6c5fd5389/README",
+      "licenseFiles": [
+        "public/licenses/tesseract-core/zlib.txt"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "Emscripten runtime",
+      "version": "Emscripten 4.0.15",
+      "license": "MIT OR NCSA",
+      "source": "https://raw.githubusercontent.com/emscripten-core/emscripten/4.0.15/LICENSE",
+      "licenseFiles": [
+        "public/licenses/tesseract-core/emscripten.txt"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "musl libc",
+      "version": "Emscripten 4.0.15",
+      "license": "MIT/BSD (see full text)",
+      "source": "https://raw.githubusercontent.com/emscripten-core/emscripten/4.0.15/system/lib/libc/musl/COPYRIGHT",
+      "licenseFiles": [
+        "public/licenses/tesseract-core/musl.txt"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "LLVM libc++",
+      "version": "Emscripten 4.0.15",
+      "license": "Apache-2.0 WITH LLVM-exception",
+      "source": "https://raw.githubusercontent.com/emscripten-core/emscripten/4.0.15/system/lib/libcxx/LICENSE.TXT",
+      "licenseFiles": [
+        "public/licenses/tesseract-core/libcxx.txt"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "LLVM libc++abi",
+      "version": "Emscripten 4.0.15",
+      "license": "Apache-2.0 WITH LLVM-exception",
+      "source": "https://raw.githubusercontent.com/emscripten-core/emscripten/4.0.15/system/lib/libcxxabi/LICENSE.TXT",
+      "licenseFiles": [
+        "public/licenses/tesseract-core/libcxxabi.txt"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "LLVM compiler-rt",
+      "version": "Emscripten 4.0.15",
+      "license": "Apache-2.0 WITH LLVM-exception",
+      "source": "https://raw.githubusercontent.com/emscripten-core/emscripten/4.0.15/system/lib/compiler-rt/LICENSE.TXT",
+      "licenseFiles": [
+        "public/licenses/tesseract-core/compiler-rt.txt"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "English trained data",
+      "version": "tessdata_fast",
+      "license": "Apache-2.0",
+      "source": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/87416418657359cb625c412a48b6e1d6d41c29bd/eng.traineddata",
+      "licenseFiles": [
+        "public/vendor/tesseract/lang/LICENSE"
+      ],
+      "kind": "bundled"
+    },
+    {
+      "name": "Korean trained data",
+      "version": "4.0.0_best_int",
+      "license": "Apache-2.0",
+      "source": "https://raw.githubusercontent.com/naptha/tessdata/gh-pages/4.0.0_best_int/kor.traineddata.gz",
+      "licenseFiles": [
+        "public/vendor/tesseract/lang/LICENSE"
+      ],
+      "kind": "bundled"
+    }
+  ],
+  "assets": [
+    {
+      "path": "public/vendor/tesseract/core/tesseract-core-lstm.wasm.js",
+      "sha256": "eef5f8b2f8e20e150680b20adaec4a60babafee3adbe8a94583c81fee46e8680",
+      "bytes": 3896484
+    },
+    {
+      "path": "public/vendor/tesseract/core/tesseract-core-relaxedsimd-lstm.wasm.js",
+      "sha256": "861a536cf9ef8e63cb644d57bab39c388f37f7d6b6f60024b741c5f6b39a59b3",
+      "bytes": 3905767
+    },
+    {
+      "path": "public/vendor/tesseract/core/tesseract-core-simd-lstm.wasm.js",
+      "sha256": "c58b46a4c796c0b8afccf77591d5b875b6896b45d402bbce8caa6f5362447b38",
+      "bytes": 3899472
+    },
+    {
+      "path": "public/vendor/tesseract/lang/eng.traineddata.gz",
+      "sha256": "d8438d6a4fba7bc3b70a47c00bc36f8f30c5dc6ee313294844a975a6904cbb04",
+      "bytes": 1967599,
+      "uncompressedSha256": "7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2"
+    },
+    {
+      "path": "public/vendor/tesseract/lang/kor.traineddata.gz",
+      "sha256": "78c21276ab14c9bb734d83be1055d9fe5469a4e7e977c51ad385be5737e61126",
+      "bytes": 1572336,
+      "uncompressedSha256": "ec1749377d49ac38fb3d3cd05dd5e2a53359d329f359762bc638a81132109992"
+    },
+    {
+      "path": "public/vendor/tesseract/tesseract.esm.min.js",
+      "sha256": "64871d76c75609fd5413b88a8171e2ef40deedd77d5875ba23df104b2d05eb29",
+      "bytes": 63220
+    },
+    {
+      "path": "public/vendor/tesseract/worker.min.js",
+      "sha256": "576b7df7e3393e137e51849357c9adb53fe7ac1bb69bfa06cf3d61520f182c6d",
+      "bytes": 111307
+    }
+  ],
+  "licenseFiles": {
+    "public/licenses/wxt/LICENSE": "7b0b00fcdbc6a036078aad84d0bc0fae240ac67144b86c911149c2daa37c9f85",
+    "public/licenses/superlock/LICENSE.md": "d0e1fbdaae1c5620073d2097838c32f8108b567b5196bad170b371e275f5720e",
+    "public/licenses/vite/LICENSE.md": "a22152baa1aef74402443008e767e7c689a524c0909d19b0431d97f5ab066a13",
+    "public/licenses/rolldown/LICENSE": "23ecfff35a5a2e80d92142f75228912c3b1abc4b5a8337a821ff4397e2f9f734",
+    "public/licenses/dequal/LICENSE": "306fa513e39b23a6e8747520de761809d206b99800ef41907b530226574c59ae",
+    "public/vendor/tesseract/LICENSE-tesseract.js.md": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
+    "public/vendor/tesseract/tesseract.min.js.LICENSE.txt": "cdf963ced7d25a0f98901a547647b4d6e2dbe0197fd78c87a059a87b0e542fe2",
+    "public/vendor/tesseract/worker.min.js.LICENSE.txt": "45f54171aeaa1d10c0c1a66f374b7bba1f02472b1487fbe892eec04f840002ac",
+    "public/vendor/tesseract/core/LICENSE": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08",
+    "public/licenses/tesseract-js/regenerator-runtime.txt": "51887a3d47051ac2fce1210562e5b9fe0830a8a8fabeb272c2d586eeb18a05fd",
+    "public/licenses/tesseract-js/zlibjs.txt": "131afe3f7bdce1698beb292fb8de1a968de01bce876122a60ef5db230471c866",
+    "public/licenses/tesseract-js/wasm-feature-detect.txt": "bcf29b4fd3ec2cb5f9d40a0866da446f6da62170d2ccedf4aeca9cf9406dd20c",
+    "public/licenses/tesseract-js/bmp-js.txt": "9f165f5bd2b462122cacb8c6dc32028be1abb4d8ad0322e9a332f30b2ebdb833",
+    "public/licenses/tesseract-js/is-url.txt": "80957b522b0ea4ce24290953d74d818220c804d1f42cad02b8d7da1c12ce1fc1",
+    "public/licenses/tesseract-js/buffer.txt": "06bafa45fdad2579ba0e43b0c9b2c6290287c99c4203c300254a462b38a307f6",
+    "public/licenses/tesseract-js/base64-js.txt": "5b37224c080cdcc97c871ada971c224e9926370fe74f11b539aa1cf9f3b1aca1",
+    "public/licenses/tesseract-js/ieee754.txt": "18d45466ba3253deae04667e267a91ea8de8548f18c1125264d1c9db28194cc1",
+    "public/licenses/tesseract-js/idb-keyval.txt": "20c27d6339619eeb3113cb865d4e98a3f559e52964fc75caea9cb5fa72674565",
+    "public/licenses/tesseract-core/tesseract-native.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "public/licenses/tesseract-core/leptonica.txt": "87829abb5bbb00b55a107365da89e9a33f86c4250169e5a1e5588505be7d5806",
+    "public/licenses/tesseract-core/giflib.txt": "0c9b7990ecdca88b676db232c226548ac408b279f550d424d996f0d83591dd8e",
+    "public/licenses/tesseract-core/libjpeg.txt": "c791da525733040e622ed257c7b096b8f5191b332604ead0c6bc2b54cbd8e0d1",
+    "public/licenses/tesseract-core/libpng.txt": "33ba4e187d8b0c8d7ab2bc2e522bb095219e03089e9aa0122b4fb9eb2b7de82b",
+    "public/licenses/tesseract-core/libtiff.txt": "fbd6fed7938541d2c809c0826225fc85e551fdbfa8732b10f0c87e0847acafd7",
+    "public/licenses/tesseract-core/libwebp.txt": "5aec868f669e384a22372a4e8a1a6cd7d44c64cd451f960ca69cc170d1e13acf",
+    "public/licenses/tesseract-core/libwebp-PATENTS.txt": "cc3273e0694ea5896145e0677699b53471b03ea43021ddc50e7923fbb9f5023c",
+    "public/licenses/tesseract-core/openlibm.txt": "b1843fbf5b03f519a5f0a44fce751bdd1022ae7148614923f9d6293e17a18b17",
+    "public/licenses/tesseract-core/zlib.txt": "fc2c3368901700f0acdeb1d8afeaca5923296768ec6824ecdf627aac396001fd",
+    "public/licenses/tesseract-core/emscripten.txt": "620a78084fc7ca97c0b5dea9abf891f3ffcadfdbf305276f099c9c4e12fc1d86",
+    "public/licenses/tesseract-core/musl.txt": "f9bc4423732350eb0b3f7ed7e91d530298476f8fec0c6c427a1c04ade22655af",
+    "public/licenses/tesseract-core/libcxx.txt": "539dd7aed86e8a4f12cbdd0e6c50c189c7d74847e4fecc64ce2c6ee3a01da38b",
+    "public/licenses/tesseract-core/libcxxabi.txt": "e2b35be49f7284a45b7baca8fc7b3ab7440e7902392b2528a457816b5bb2a15c",
+    "public/licenses/tesseract-core/compiler-rt.txt": "1a8f1058753f1ba890de984e48f0242a3a5c29a6a8f2ed9fd813f36985387e8d",
+    "public/vendor/tesseract/lang/LICENSE": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08"
+  },
+  "embeddedSourceMapPackages": [
+    "regenerator-runtime",
+    "zlibjs",
+    "wasm-feature-detect",
+    "bmp-js",
+    "is-url",
+    "buffer",
+    "idb-keyval",
+    "base64-js",
+    "ieee754"
+  ]
+}

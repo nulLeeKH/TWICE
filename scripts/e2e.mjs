@@ -64,6 +64,14 @@ let panel, reader;
 try {
   const { id } = await browser.call('Extensions.loadUnpacked', { path: extension });
   const panelUrl = `chrome-extension://${id}/sidepanel.html`;
+  const legal = await browser.open(`chrome-extension://${id}/licenses.html`, undefined, false);
+  await browser.wait(legal, `document.querySelector('h1')?.textContent==='TWICE · Open-source licenses'`, 'offline license page');
+  const legalCount = JSON.parse(fs.readFileSync(path.join(root,'licensing/third-party.json'),'utf8')).components.length;
+  check('licenses: offline page includes project MIT and every bundled component', await browser.evaluate(legal, `document.body.textContent.includes('Permission is hereby granted') && document.body.textContent.includes('Independent JPEG Group') && document.querySelectorAll('tbody tr').length===${legalCount}`));
+  check('licenses: all local notice and original-text links resolve', await browser.evaluate(legal, `(async()=>{const links=[...document.querySelectorAll('a')].map(a=>a.href);return links.length>30 && (await Promise.all(links.map(async href=>(await fetch(href)).ok))).every(Boolean)})()`));
+  await browser.screenshot(legal, path.join(root,'.output/previews/licenses.png'),900,850);
+  await browser.close(legal);
+
   for (const mode of ['unsupported', 'unavailable', 'download-fail', 'download']) {
     panel = await browser.open(panelUrl, fakeAi(mode), false);
     await browser.wait(panel, `(()=>{const kind=document.getElementById('model-card')?.dataset.kind;return !!kind && kind!=='checking'})()`, mode);
@@ -76,7 +84,7 @@ try {
         await browser.evaluate(panel, `document.getElementById('gear').click();document.getElementById('ui-language').value='en';document.getElementById('ui-language').dispatchEvent(new Event('change',{bubbles:true}))`);
         await browser.wait(panel, `document.documentElement.lang==='en' && document.getElementById('model-title').textContent==='AI unavailable'`, 'English unavailable copy');
         await browser.wait(panel, `(async()=> (await chrome.storage.local.get('uiLanguage')).uiLanguage==='en')()`, 'locale saved');
-        check('locale: unavailable model help and labels are English', await browser.evaluate(panel, `document.getElementById('start').textContent==='Start' && document.getElementById('device-help').textContent.includes('supported desktop Chrome') && document.getElementById('gear').getAttribute('aria-label')==='Open settings'`));
+        check('locale: unavailable model help and labels are English', await browser.evaluate(panel, `document.getElementById('start').textContent==='Start' && document.getElementById('device-help').textContent.includes('supported desktop Chrome') && document.getElementById('gear').getAttribute('aria-label')==='Open settings' && document.querySelector('a[href="/licenses.html"]').textContent==='Open-source licenses'`));
         await browser.screenshot(panel, path.join(root, '.output/previews/ai-unavailable-en.png'));
         await browser.call('Page.reload',{},panel.sessionId);
         await browser.wait(panel, `document.documentElement.lang==='en' && document.getElementById('model-card')?.dataset.kind==='unsupported'`, 'locale survives reopen');

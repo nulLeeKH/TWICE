@@ -14,11 +14,14 @@
     "postinstall": "wxt prepare",
     "test:e2e": "node scripts/e2e.mjs",
     "test:audio": "node scripts/audio-check.mjs",
-    "check": "pnpm typecheck && pnpm test && pnpm build"
+    "check": "pnpm typecheck && pnpm test && pnpm build",
+    "licenses:check": "node scripts/licenses.mjs check",
+    "licenses:inventory": "node scripts/licenses.mjs inventory"
   },
   "devDependencies": {
     "typescript": "^7.0.2",
     "vitest": "^5.0.5",
     "wxt": "^0.21.5"
-  }
+  },
+  "license": "MIT"
 }

@@ -1,5 +1,7 @@
 # TWICE
 
+**2026 고려대학교 정보대학 InThon / Hackathon Track**에서 **17팀 Seventeen**이 만든 프로젝트입니다. 대회 주제인 **감각**을 독서와 소리의 연결로 풀어냈습니다.
+
 웹 소설 화면의 분위기를 읽어 실시간으로 음악·배경음·효과음을 합성하는 온디바이스 Chrome 확장 프로그램입니다.
 
 접근 가능한 전체 회차 본문이 있으면 장면별로 미리 분석하고, 없으면 보이는 화면의 OCR과 이전 20줄 문맥으로 장면에 맞는 소리를 이어 붙입니다. 사이트마다 연동하거나 미리 분석해 둘 필요가 없습니다. 기본은 기기 안에서만 동작하며(Tesseract OCR + Chrome의 Gemini Nano + Web Audio 합성), 원하면 OpenAI 호환 API로 분석 모델만 바꿀 수 있습니다.
@@ -96,7 +98,7 @@ pnpm zip         # 배포용 zip 생성
 |---|---|---|
 | `pnpm check` | 모델 수명·외부 API·전환 규칙·작곡·병합·i18n·런타임 단위 테스트, 타입, 빌드 | 51/51 |
 | `pnpm test:audio` | 분위기 16종 출력, 전환 크로스페이드 무음 없음, 마디 끝 무음 없음, 클리핑, 덕킹·일시정지, 메인 스레드 정지 중 재생, 효과음 47종 음량·피크 리포트 | 27/27 |
-| `pnpm test:e2e` | 모델 없음·다운로드 흐름, 실제 OCR, 음악→배경 순서, 큐 병합, 탭·회차·이탈, 댓글 구간 진입·복귀, 실패 경고·재시도, 음소거, 한/영 UI | 44/44 |
+| `pnpm test:e2e` | 모델 없음·다운로드 흐름, 실제 OCR, 음악→배경 순서, 큐 병합, 탭·회차·이탈, 댓글 구간 진입·복귀, 실패 경고·재시도, 음소거, 한/영 UI, 오프라인 라이선스·원문 링크 | 46/46 |
 
 ## 개발 프로세스
 
@@ -116,10 +118,22 @@ pnpm zip         # 배포용 zip 생성
    pnpm install --frozen-lockfile && pnpm zip
    (cd .output && shasum -a 256 twice-X.Y.Z-chrome.zip > SHA256SUMS)
    git tag -a vX.Y.Z -m "TWICE vX.Y.Z" && git push origin vX.Y.Z
-   gh release create vX.Y.Z .output/twice-X.Y.Z-chrome.zip .output/SHA256SUMS --title "TWICE vX.Y.Z" --generate-notes
+   gh release create vX.Y.Z .output/twice-X.Y.Z-chrome.zip .output/SHA256SUMS --title "TWICE vX.Y.Z" --notes-file notes.md
    ```
 
 빌드 결과물(zip)은 저장소에 커밋하지 않고 GitHub 릴리즈 자산으로만 보관합니다.
+
+릴리즈 노트는 짧게 씁니다. 한 줄 요약, 변경 사항 목록, 테스트 결과, zip의 SHA256만 넣고 설치 방법이나 주의 사항은 README에 둡니다.
+
+```markdown
+첫 릴리즈입니다.
+
+- 화면 OCR(로컬 Tesseract) → 온디바이스 Gemini Nano 또는 OpenAI 호환 API → 음악, 배경음, 효과음 실시간 합성
+- 분위기 16종, 16/32마디 조합형 작곡과 크로스페이드 전환
+- 테스트: 단위 51/51, 오디오 27/27, e2e 44/44
+
+SHA256 (twice-0.1.0-chrome.zip): fdf1941d…
+```
 
 ## 알려진 한계
 
@@ -162,3 +176,16 @@ pnpm check                             # 전체 타입 검사/단위 테스트/�
 - 별도 API 요청 없이 기기에서 작곡·재생합니다. 전체 회차 분석과 읽는 위치 동기화 로직은 변경하지 않았습니다.
 - 오프라인 코드 검증: `node scripts/verify-cinematic.mjs`, `node scripts/verify-fast-acoustic.mjs`. 브라우저 실청음·믹싱·클리핑 검증은 필요합니다.
 - *한계*: 진짜 영화 수준의 자연스러운 악기 음색에는 정식 라이선스가 확인된 멀티샘플 악기 또는 전용 오디오 엔진이 추가로 필요할 수 있습니다.
+
+## 라이선스
+
+TWICE 자체 코드는 [MIT License](LICENSE)로 제공합니다. 상업적 이용·수정·재배포가 가능하며 저작권·허가 고지를 유지해야 합니다. 외부 구성 요소는 각각의 원래 라이선스를 따릅니다.
+
+OCR·WASM 내부 라이브러리, 학습 데이터, 실제 번들에 포함되는 런타임 코드의 원문 고지는 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)에 있습니다. 설치한 확장에서는 **설정 → 오픈소스 라이선스**에서 오프라인으로 읽을 수 있으며, ZIP에도 프로젝트 LICENSE·전체 고지·원문 텍스트가 포함됩니다. 검토 범위와 근거는 [라이선스 검토 기록](licensing/REVIEW.md)을 참고하세요.
+
+```bash
+pnpm licenses:check       # OCR 자산 해시·고지 원문·의존성 라이선스 점검
+pnpm licenses:inventory   # 설치된 개발 의존성 목록 갱신 후 변경 내용 검토
+```
+
+일반 빌드와 ZIP 생성 시 실제 런타임 모듈의 이름·버전·라이선스도 검사합니다. 의존성 또는 벤더 파일을 바꾸면 고지·검토 목록을 함께 갱신해야 합니다. Chrome·Nano 모델과 사용자가 연결하는 외부 AI 서비스의 이용 조건은 프로젝트 MIT 라이선스와 별개입니다.
