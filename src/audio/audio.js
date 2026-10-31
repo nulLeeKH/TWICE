@@ -163,7 +163,8 @@ export function createEngine(ctx = new AudioContext()) {
   const roomSend = ctx.createGain();
   const indoorVerb = ctx.createConvolver();
   indoorVerb.buffer = irs[0];
-  roomSend.connect(indoorVerb).connect(comp);
+  // through the ambience fader, so muting ambience also silences its room tail
+  roomSend.connect(indoorVerb).connect(mix.ambience);
   comp
     .connect(duckGain)
     .connect(hushGain)
@@ -339,6 +340,7 @@ function layer(env, level, steady = false) {
   if (!steady) env.ticks.add(breathe);
   return {
     g,
+    post: swell, // after fade, trim and swell: tap here for sends that must follow the layer
     own: (s) => (sources.push(s), s),
     setLevel(x) {
       if (norm === null) trim.gain.value = x * (indoor ? 0.7 : 1);
@@ -927,11 +929,12 @@ function animals(env, a) {
   const kind = a.variant;
   let p = a;
   const verbSend = ctx.createGain(); verbSend.gain.value = 0.18; verbSend.connect(env.roomSend);
+  L.post.connect(verbSend); // branches after the layer gain so fades and level trims reach the reverb too
   const voiceOut = (pan, cutoff, level) => {
     const lp = ctx.createBiquadFilter(); lp.frequency.value = cutoff;
     const g = ctx.createGain(); g.gain.value = level;
     const pn = ctx.createStereoPanner(); pn.pan.value = pan;
-    lp.connect(g).connect(pn); pn.connect(L.g); pn.connect(verbSend);
+    lp.connect(g).connect(pn).connect(L.g);
     return lp;
   };
   /** A pure whistle following keyframes [[fraction, Hz], …], with a faint 2nd harmonic. */

@@ -209,12 +209,14 @@ const AMBIENCE_PAGE = `(async () => {
   const mono = (b) => { const l = b.getChannelData(0), r = b.getChannelData(1); return l.map((x, i) => (x + r[i]) / 2); };
   const peak = (b) => Math.max(...[0, 1].map((c) => b.getChannelData(c).reduce((m, x) => Math.max(m, Math.abs(x)), 0)));
   const rms = (x) => Math.sqrt(x.reduce((n, v) => n + v * v, 0) / x.length);
+  // loudest half-second after the fade-in: intermittent calls (owl, crow, wolf) leave silence between them
+  const loudRms = (x) => { let m = 0; for (let i = SR / 2; i + SR / 2 <= x.length; i += SR / 4) m = Math.max(m, rms(x.slice(i, i + SR / 2))); return m; };
   const scene = (ambience) => normalizeSegment({ mood: "calm", intensity: 0.5, ambience });
   const R = { amb: {} };
   for (const [engine, def] of Object.entries(AMBIENCE))
     for (const variant of def.variants.length ? def.variants : [undefined]) {
       const b = await render(6, (e) => { e.setScene(scene([{ engine, variant, p1: 0.6, p2: 0.5, p3: 0.2 }])); e.pauseMusic(true, 0.01); });
-      R.amb[engine + (variant ? "." + variant : "")] = { peak: peak(b), rms: rms(mono(b).slice(SR * 3)) };
+      R.amb[engine + (variant ? "." + variant : "")] = { peak: peak(b), rms: loudRms(mono(b)) };
     }
   // four layers at once: rain heard from inside, fire, and two animals sharing the stage, over music
   const busy = normalizeSegment({ mood: "sad", intensity: 0.6, ambience: [
@@ -222,6 +224,10 @@ const AMBIENCE_PAGE = `(async () => {
     { engine: "bio", variant: "songbird", p1: 0.5, p2: 0.5, p3: 0.3 }, { engine: "bio", variant: "cricket", p1: 0.5, p2: 0.5, p3: 0.3 } ] });
   const b = await render(6, (e) => e.setScene(busy));
   R.layers = { count: busy.ambience.length, peak: peak(b) };
+  // ambience fader at zero: indoor room reverb and the animals' own reverb must fall silent with it
+  const quiet = await render(4, (e) => { e.setScene(scene([{ engine: "particle", variant: "glass", p1: 0.6, p2: 0.5, p3: 0, indoor: true },
+    { engine: "bio", variant: "songbird", p1: 0.6, p2: 0.5, p3: 0.2 }])); e.pauseMusic(true, 0.01); e.mix.ambience.gain.value = 0; });
+  R.muted = loudRms(mono(quiet));
   // rain on glass → rain on metal mid-scene: the layer glides instead of restarting, so the level never sags
   const g = await render(10, (e) => { e.setScene(scene([{ engine: "particle", variant: "glass", p1: 0.6, p2: 0.5, p3: 0 }])); e.pauseMusic(true, 0.01); },
     [{ at: 5, fn: (e) => e.updateScene(scene([{ engine: "particle", variant: "metal", p1: 0.6, p2: 0.5, p3: 0 }])) }]);
@@ -264,6 +270,7 @@ try {
   for (const [name, x] of amb) console.log(`     ambience ${name.padEnd(18)} peak ${f(x.peak)}  rms ${(20 * Math.log10(x.rms / loudest)).toFixed(1)} dB vs loudest`);
   check("every ambience layer is audible and below clipping", amb.every(([, x]) => x.peak <= 1 && x.rms > 0.0005), `${amb.length} layers, max peak ${f(Math.max(...amb.map(([, x]) => x.peak)))}, min rms ${f(Math.min(...amb.map(([, x]) => x.rms)))}`);
   check("four ambience layers play together without clipping", A.layers.count === 4 && A.layers.peak <= 1, JSON.stringify(A.layers));
+  check("muting ambience also silences its reverb", A.muted < 1e-5, `loudest rms ${A.muted.toExponential(1)}`);
   check("rain material change glides without a gap", A.glide > 0.4, `lowest 100ms level during the change ${f(A.glide)} of the level before`);
 } catch (e) {
   console.error("ERROR", e);

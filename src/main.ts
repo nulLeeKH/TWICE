@@ -38,7 +38,7 @@ async function start() {
     $("external-fields").hidden = provider !== "openai";
     document.body.dataset.provider = provider; // hides the Nano setup card while the API tab is chosen
   };
-  const describe = (config: SavedModel) => config.provider === "openai" ? `연결됨 · ${new URL(config.baseURL).host} · ${config.model}` : "기기 안 AI 사용";
+  const describe = (config: SavedModel) => config.provider === "openai" ? `연결됨 · ${new URL(config.baseURL).host} · ${config.model}` : "온디바이스 AI 사용";
   async function apply(next: SavedModel) {
     saved = next; showProvider(next.provider);
     model.setExternal(next.provider === "openai" ? next : null);
