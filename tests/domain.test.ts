@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Transcript } from "../src/domain/transcript";
-import { completeJsonFields, groundAmbience, groundSfx, linesToParagraphs, MOODS, navigationKind, normalizeSegment, screenDecision, shouldChangeMusic, filterOcrLines } from "../src/domain/score.js";
-import { accompany, arrangement, compose, INSTRUMENTS } from "../src/audio/music.js";
+import { completeJsonFields, groundAmbience, groundSfx, linesToParagraphs, MOODS, navigationKind, normalizeSegment, screenDecision, shouldChangeMusic, filterOcrLines, SFX, SFX_GAP_S } from "../src/domain/score.js";
+import { accompany, arrangement, compose, INSTRUMENTS, instrumentCuePlan, percussionPattern, preventShortMelodyLoops } from "../src/audio/music.js";
 const view = { range: [0, 800] as [number, number], view: 1 };
 describe("deduplicated observation queue", () => {
   it("merges overlapping fragments and batches current plus intermediate screens exactly once", () => {
@@ -97,9 +97,9 @@ describe("decision and navigation contract", () => {
     const calm = normalizeSegment({ mood: "calm" }), to = (mood: string) => normalizeSegment({ mood, music_action: "change" });
     expect(shouldChangeMusic(null, to("sad"), 0)).toBe(true);
     expect(shouldChangeMusic(calm, to("sad"), 5)).toBe(false);
-    expect(shouldChangeMusic(calm, to("sad"), 25)).toBe(true);
-    expect(shouldChangeMusic(calm, to("romance"), 25)).toBe(false);
-    expect(shouldChangeMusic(calm, to("romance"), 65)).toBe(true);
+    expect(shouldChangeMusic(calm, to("sad"), 6)).toBe(true);
+    expect(shouldChangeMusic(calm, to("romance"), 9)).toBe(false);
+    expect(shouldChangeMusic(calm, to("romance"), 10)).toBe(true);
     expect(shouldChangeMusic(calm, to("battle"), 2)).toBe(true);
     expect(shouldChangeMusic(calm, normalizeSegment({ mood: "sad", music_action: "keep" }), 99)).toBe(false);
   });
@@ -152,5 +152,78 @@ describe("decision and navigation contract", () => {
       "오른쪽 두 번째 문단이 시작된다.",
     ]);
     expect(paragraphs[2]!.y0).toBeGreaterThan(paragraphs[1]!.y0);
+  });
+});
+
+
+describe("instrument-only events and non-repetitive scoring", () => {
+  it("covers every story event with instrument voices, never sampled Foley", () => {
+    expect(SFX_GAP_S).toBe(8);
+    for (const type of SFX) {
+      const plan = instrumentCuePlan(type, 0.7, () => 0.6);
+      if (type === "sudden_silence") { expect(plan).toEqual([]); continue; }
+      expect(plan.length).toBeGreaterThan(0);
+      expect(plan.length).toBeLessThanOrEqual(3);
+      for (const note of plan) {
+        expect(INSTRUMENTS).toContain(note.instrument);
+        expect(note.offset).toBeGreaterThanOrEqual(0);
+        expect(note.offset + note.duration).toBeLessThan(1.5);
+      }
+    }
+  });
+  it("prevents full-bar melody loops within eight seconds at slow and fast tempi", () => {
+    for (const bpm of [45, 80, 155]) {
+      const melody = () => [{ beat: 0, len: 2, note: 60 }, { beat: 2, len: 2, note: 64 }];
+      const bars = Array.from({ length: 12 }, () => ({ chord: [60, 64, 67], melody: melody() }));
+      preventShortMelodyLoops(bars, bpm, [60, 62, 64, 65, 67, 69, 71, 72]);
+      const signature = (i: number) => JSON.stringify(bars[i]!.melody);
+      for (let i = 0; i < bars.length; i++) for (let j = 0; j < i; j++)
+        if ((i - j) * 240 / bpm < 8) expect(signature(i)).not.toBe(signature(j));
+    }
+  });
+});
+
+
+describe("gentle acoustic timbre policy", () => {
+  const acoustic = new Set(["strings", "cello", "harp", "piano", "marimba", "timpani", "bass_drum", "frame_drum"]);
+  it("uses only gentle acoustic voices for all mood presets and arrangements", () => {
+    for (const mood of Object.keys(MOODS)) {
+      const preset = MOODS[mood as keyof typeof MOODS];
+      expect(acoustic.has(preset.lead)).toBe(true);
+      expect(preset.support.every((name: string) => acoustic.has(name))).toBe(true);
+      const plan = arrangement(mood);
+      expect(acoustic.has(plan.bed)).toBe(true);
+      expect(plan.lead === null || acoustic.has(plan.lead)).toBe(true);
+      expect(plan.parts.every((part: { instrument: string }) => acoustic.has(part.instrument))).toBe(true);
+      expect(plan.percussion.every((name: string) => acoustic.has(name))).toBe(true);
+    }
+  });
+  it("uses only gentle acoustic voices for all sound effect cues", () => {
+    for (const type of SFX) for (const random of [0.05, 0.45, 0.95])
+      expect(instrumentCuePlan(type, 1, () => random).every(note => acoustic.has(note.instrument))).toBe(true);
+  });
+});
+
+
+describe("organic percussion instead of drum-machine loops", () => {
+  it("keeps reflective and quiet music free of percussion", () => {
+    for (const mood of ["calm", "sad", "romance", "mystic", "comedy"])
+      for (let bar = 0; bar < 32; bar++) expect(percussionPattern(mood, 1, bar)).toEqual([]);
+    for (const mood of ["battle", "epic", "anger", "tension", "horror"])
+      for (let bar = 0; bar < 32; bar++) expect(percussionPattern(mood, .2, bar)).toEqual([]);
+  });
+  it("adds sparse warm acoustic drums only to suitable energetic scenes", () => {
+    const drums = new Set(["timpani", "bass_drum", "frame_drum"]);
+    for (const mood of ["battle", "epic", "anger", "tension", "horror", "adventure"]) {
+      const bars = Array.from({length: 16}, (_, i) => percussionPattern(mood, .9, i));
+      expect(bars.some(notes => notes.length > 0)).toBe(true);
+      expect(bars.filter(notes => notes.length === 0).length).toBeGreaterThan(0);
+      for (const notes of bars) for (const note of notes) {
+        expect(drums.has(note.instrument)).toBe(true);
+        expect(note.beat).toBeGreaterThanOrEqual(0);
+        expect(note.beat).toBeLessThan(4);
+        expect(note.vel).toBeLessThanOrEqual(.83);
+      }
+    }
   });
 });

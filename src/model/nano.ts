@@ -1,4 +1,5 @@
 import { SYSTEM, analyze } from "./decision.js";
+import { CHAPTER_SCHEMA, CHAPTER_SYSTEM, type ChapterChunk, type ChapterPlanRow } from "../domain/chapter";
 import type { AnalysisProgress, AnalysisResult, Availability, Batch, Decision, ModelState, Playback } from "../domain/types";
 
 interface ModelSession {
@@ -55,7 +56,7 @@ export function openAiSession(config: ExternalModel): ModelSession {
         headers: { "content-type": "application/json", ...(config.apiKey ? { authorization: `Bearer ${config.apiKey}` } : {}) },
         body: JSON.stringify({
           model: config.model, temperature: 0.2,
-          messages: [{ role: "system", content: SYSTEM }, { role: "user", content: input }],
+          messages: [{ role: "system", content: typeof options.systemPrompt === "string" ? options.systemPrompt : SYSTEM }, { role: "user", content: input }],
           response_format: { type: "json_schema", json_schema: { name: "scene", schema: options.responseConstraint } },
         }),
       });
@@ -177,6 +178,32 @@ export class NanoClient {
     this.preparationAbort?.abort(new DOMException("모델 준비 취소", "AbortError")); this.revision++;
     this.preparationAbort = null; this.preparation = null;
     this.set({ kind: "error", title: "준비 취소됨", detail: "필요할 때 다시 준비할 수 있습니다." });
+  }
+
+  /** Analyze multiple labelled reading sections in one request, not one request per screen. */
+  async planChapter(chunk: ChapterChunk, signal: AbortSignal, context = ""): Promise<ChapterPlanRow[]> {
+    if (!this.ready || !this.base) throw new ModelError("not-ready", "모델 준비가 필요합니다.");
+    signal.throwIfAborted();
+    const session = await this.base.clone({ signal });
+    let onAbort: (() => void) | undefined;
+    try {
+      const cancelled = new Promise<never>((_, reject) => {
+        onAbort = () => reject(signal.reason ?? new DOMException("취소", "AbortError"));
+        signal.addEventListener("abort", onAbort, { once: true });
+      });
+      const prompt = `${CHAPTER_SYSTEM}\nReturn segments for these section ids, in order: ${chunk.sections.map(s => s.id).join(", ")}\n${context ? `Surrounding story for continuity ONLY (do not score these lines or trigger effects from them):\n${context}\n` : ""}${chunk.text}`;
+      const raw = await Promise.race([
+        session.prompt(prompt, { responseConstraint: CHAPTER_SCHEMA, signal, systemPrompt: CHAPTER_SYSTEM }),
+        cancelled,
+      ]);
+      signal.throwIfAborted();
+      const parsed = JSON.parse(raw.trim().replace(/^```(?:json)?\s*|\s*```$/g, "")) as { segments?: ChapterPlanRow[] };
+      if (!Array.isArray(parsed.segments)) throw new ModelError("inference", "사전 분석 응답 형식이 올바르지 않습니다.");
+      return parsed.segments;
+    } finally {
+      if (onAbort) signal.removeEventListener("abort", onAbort);
+      try { session.destroy(); } catch {}
+    }
   }
 
   async decide(batch: Batch, previous: Decision | null, playback: Playback, signal: AbortSignal, onProgress: (progress: AnalysisProgress) => void): Promise<AnalysisResult> {

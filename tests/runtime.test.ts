@@ -24,7 +24,7 @@ vi.mock("wxt/browser", () => ({ browser: harness.browser }));
 vi.mock("../src/audio/audio.js", () => ({ createEngine: harness.engine }));
 import { ReaderRuntime } from "../src/session/runtime";
 let runtime: ReaderRuntime;
-let model: { ready: boolean; prepare: ReturnType<typeof vi.fn>; decide: ReturnType<typeof vi.fn>; dispose: ReturnType<typeof vi.fn>; cancelPreparation: ReturnType<typeof vi.fn> };
+let model: { ready: boolean; state: { external?: string }; prepare: ReturnType<typeof vi.fn>; decide: ReturnType<typeof vi.fn>; planChapter: ReturnType<typeof vi.fn>; dispose: ReturnType<typeof vi.fn>; cancelPreparation: ReturnType<typeof vi.fn> };
 beforeEach(() => {
   harness.engines.length = 0;
   harness.browser.permissions.request.mockResolvedValue(true);
@@ -32,7 +32,10 @@ beforeEach(() => {
   harness.browser.tabs.get.mockResolvedValue({ id: 1, active: true, windowId: 2 });
   harness.browser.scripting.executeScript.mockResolvedValue([]);
   harness.browser.storage.local.get.mockResolvedValue({}); harness.browser.storage.local.set.mockResolvedValue(undefined);
-  model = { ready: true, prepare: vi.fn(async () => {}), decide: vi.fn(), dispose: vi.fn(), cancelPreparation: vi.fn() };
+  model = { ready: true, state: {}, prepare: vi.fn(async () => {}), decide: vi.fn(),
+    planChapter: vi.fn(async (chunk: { sections: { id: number; start: number }[] }) => chunk.sections.map(s => ({
+      id: s.id, mood: s.start < 20 ? "calm" : "horror", intensity: 0.6, action: "continue", sfx: [],
+    }))), dispose: vi.fn(), cancelPreparation: vi.fn() };
   runtime = new ReaderRuntime(model as unknown as NanoClient);
 });
 afterEach(async () => { await runtime.dispose(); vi.clearAllMocks(); });
@@ -41,9 +44,12 @@ describe("reader ownership and transport", () => {
     harness.browser.permissions.request.mockResolvedValue(false); await runtime.connect();
     expect(runtime.connected).toBe(false); expect(runtime.state.message).toContain("권한"); expect(harness.engines[0]!.close).toHaveBeenCalledTimes(1);
   });
-  it("an unavailable model never leaves silent audio resources behind", async () => {
+  it("model preparation failure keeps non-blocking provisional audio with a visible warning", async () => {
     model.prepare.mockRejectedValue(new Error("모델이 없습니다")); await runtime.connect();
-    expect(runtime.connected).toBe(false); expect(runtime.state.message).toContain("모델이 없습니다"); expect(harness.engines[0]!.close).toHaveBeenCalled();
+    await vi.waitFor(() => expect(runtime.state.alert).toContain("모델이 없습니다"));
+    expect(runtime.connected).toBe(true);
+    expect(harness.engines[0]!.setScene).toHaveBeenCalledTimes(1);
+    expect(runtime.diagnostics().queue.provisional).toBe(true);
   });
   it("protected browser pages are rejected with a useful explanation", async () => {
     harness.browser.tabs.query.mockResolvedValue([{ id: 1, windowId: 2, url: "chrome://settings", title: "설정" }]); await runtime.connect();
@@ -100,4 +106,46 @@ describe("reader ownership and transport", () => {
     expect(runtime.state.lastEffect).toBeNull();
     expect(engine.stopSfx).toHaveBeenCalledTimes(1);
   });
+  it("starts provisional acoustic music without waiting for a slow model", async () => {
+    model.ready = false;
+    let finish!: () => void;
+    model.prepare.mockImplementation(() => new Promise<void>(resolve => { finish = resolve; }));
+    await runtime.connect();
+    const engine = harness.engines[0]!;
+    expect(engine.setScene).toHaveBeenCalledTimes(1);
+    expect((engine.setScene.mock.calls[0]![0] as { mood: string }).mood).toBe("calm");
+    expect(runtime.diagnostics().queue.provisional).toBe(true);
+    model.ready = true; finish();
+    await Promise.resolve();
+  });
+  it("applies mapped chapter music at the reader's position and changes when moving", async () => {
+    await runtime.connect();
+    const engine = harness.engines[0]!;
+    const blocks = Array.from({length: 55}, (_, i) => ({ text: `문단 ${i} ` + "평화로운 이야기 ".repeat(9), y: 100 + i * 42 }));
+    harness.browser.runtime.onMessage.emit({ type: "twice:chapter", fingerprint: "story:55:123", blocks }, { tab: { id: 1 } });
+    await vi.waitFor(() => expect(runtime.diagnostics().queue.fullChapter?.analyzed).toBe(55));
+    harness.browser.runtime.onMessage.emit({ type: "twice:position", fingerprint: "story:55:123", index: 7 }, { tab: { id: 1 } });
+    expect(runtime.state.playing?.mood).toBe("calm");
+    (runtime as unknown as {lastMusicAt: number}).lastMusicAt = Date.now() - 30_000;
+    harness.browser.runtime.onMessage.emit({ type: "twice:position", fingerprint: "story:55:123", index: 39 }, { tab: { id: 1 } });
+    expect(runtime.state.playing?.mood).toBe("horror");
+    expect(engine.setScene).toHaveBeenCalledTimes(3); // provisional + initial scored + position change
+    expect(runtime.diagnostics().queue.provisional).toBe(false);
+  });
+  it("re-prioritizes the remaining chapter chunks when the reader jumps ahead", async () => {
+    await runtime.connect();
+    const blocks = Array.from({ length: 120 }, (_, i) => ({ text: `문단 ${i} ` + "한글 소설 내용 ".repeat(12), y: 100 + i * 42 }));
+    let firstResolve!: (value: unknown[]) => void;
+    model.planChapter.mockImplementationOnce((chunk: {sections: {id: number}[]}) =>
+      new Promise(resolve => { firstResolve = resolve; }));
+    harness.browser.runtime.onMessage.emit({ type: "twice:chapter", fingerprint: "story:120:999", blocks }, {tab:{id:1}});
+    expect(model.planChapter).toHaveBeenCalledTimes(1);
+    const first = model.planChapter.mock.calls[0]![0] as {sections: {id: number;start: number}[]};
+    harness.browser.runtime.onMessage.emit({type:"twice:position", fingerprint:"story:120:999", index:113}, {tab:{id:1}});
+    firstResolve(first.sections.map(s => ({ id:s.id, mood:"calm", intensity:.5, action:"continue", sfx:[] })));
+    await vi.waitFor(() => expect(model.planChapter.mock.calls.length).toBeGreaterThan(1));
+    const second = model.planChapter.mock.calls[1]![0] as {sections: {start:number;end:number}[]};
+    expect(second.sections.some(s => s.start <= 113 && s.end >= 113)).toBe(true);
+  });
+
 });

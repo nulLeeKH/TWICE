@@ -9,29 +9,31 @@ const PHRYGIAN = [0, 1, 3, 5, 7, 8, 10], LYDIAN = [0, 2, 4, 6, 7, 9, 11];
  * bpm is a range: each composed piece picks a tempo inside it, near the previous tempo.
  * family groups moods close enough that a switch between them only reshapes the current piece.
  */
+// Quiet acoustic-only palette: bowed strings, cello, harp, piano, and soft mallet percussion.
+// Even tense scenes keep a gentle timbre; intensity comes from harmony, rhythm and dynamics.
 export const MOODS = {
-  calm: { family: "warm", lead: "piano", support: ["pad"], bpm: [60, 85], scale: MAJOR, style: "arp", register: 72, room: 0.45 },
-  hope: { family: "warm", lead: "harp", support: ["piano", "strings"], bpm: [85, 115], scale: MAJOR, style: "arp", register: 74, room: 0.4 },
-  romance: { family: "warm", lead: "piano", support: ["strings"], bpm: [60, 90], scale: MAJOR, style: "broken", register: 69, room: 0.45 },
-  comedy: { family: "bright", lead: "music_box", support: ["harp", "piano"], bpm: [100, 145], scale: MAJOR, style: "bounce", register: 76, room: 0.3 },
-  adventure: { family: "bright", lead: "harp", support: ["strings"], bpm: [95, 125], scale: MAJOR, style: "broken", register: 72, room: 0.45 },
-  growth: { family: "bright", lead: "strings", support: ["piano", "harp"], bpm: [80, 110], scale: MAJOR, style: "broken", register: 69, room: 0.5 },
-  epic: { family: "grand", lead: "strings", support: ["pad", "pulse_bass"], bpm: [75, 120], scale: MINOR, style: "sustain", register: 67, room: 0.75 },
-  sad: { family: "sorrow", lead: "cello", support: ["piano"], bpm: [45, 70], scale: MINOR, style: "sustain", register: 62, room: 0.55 },
-  tragic: { family: "sorrow", lead: "cello", support: ["dark_pad", "piano"], bpm: [45, 75], scale: MINOR, style: "sustain", register: 60, room: 0.6 },
-  dark: { family: "sorrow", lead: "dark_pad", support: ["cello"], bpm: [45, 70], scale: MINOR, style: "sustain", register: 57, room: 0.65 },
-  tension: { family: "fear", lead: "pad", support: ["pulse_bass"], bpm: [65, 105], scale: PHRYGIAN, style: "pulse", register: 60, room: 0.4 },
-  horror: { family: "fear", lead: "dark_pad", support: ["cello", "pulse_bass"], bpm: [40, 80], scale: PHRYGIAN, style: "sparse", register: 52, room: 0.75 },
-  mystery: { family: "fear", lead: "rhodes", support: ["dark_pad"], bpm: [55, 90], scale: DORIAN, style: "sparse", register: 64, room: 0.5 },
-  battle: { family: "fight", lead: "strings", support: ["pulse_bass", "cello"], bpm: [110, 155], scale: MINOR, style: "drive", register: 64, room: 0.45 },
-  anger: { family: "fight", lead: "cello", support: ["pulse_bass", "strings"], bpm: [95, 135], scale: PHRYGIAN, style: "drive", register: 57, room: 0.4 },
-  mystic: { family: "wonder", lead: "music_box", support: ["harp", "pad"], bpm: [50, 85], scale: LYDIAN, style: "arp", register: 76, room: 0.7 },
+  calm:      { family: "warm",   lead: "piano",   support: ["strings", "harp"],    bpm: [58, 78],  scale: MAJOR,    style: "arp",      register: 69, room: 0.45 },
+  hope:      { family: "warm",   lead: "harp",    support: ["strings", "piano"],   bpm: [75, 100], scale: MAJOR,    style: "arp",      register: 72, room: 0.45 },
+  romance:   { family: "warm",   lead: "cello",   support: ["piano", "strings"], bpm: [56, 78],  scale: MAJOR,    style: "broken",   register: 67, room: 0.55 },
+  comedy:    { family: "bright", lead: "marimba", support: ["harp", "strings"],  bpm: [92, 120], scale: MAJOR,    style: "bounce",   register: 73, room: 0.30 },
+  adventure: { family: "bright", lead: "harp",    support: ["strings", "marimba"],bpm: [83, 112], scale: MAJOR,    style: "broken",   register: 71, room: 0.45 },
+  growth:    { family: "bright", lead: "strings", support: ["piano", "harp"],   bpm: [75, 102], scale: MAJOR,    style: "broken",   register: 67, room: 0.50 },
+  epic:      { family: "grand",  lead: "strings", support: ["cello", "harp"],    bpm: [70, 104], scale: MINOR,    style: "sustain",  register: 66, room: 0.65 },
+  sad:       { family: "sorrow", lead: "cello",   support: ["piano", "strings"], bpm: [48, 68],  scale: MINOR,    style: "sustain",  register: 62, room: 0.55 },
+  tragic:    { family: "sorrow", lead: "cello",   support: ["strings", "piano"], bpm: [48, 72],  scale: MINOR,    style: "sustain",  register: 60, room: 0.65 },
+  dark:      { family: "sorrow", lead: "cello",   support: ["strings", "harp"],  bpm: [48, 72],  scale: MINOR,    style: "sparse",   register: 57, room: 0.65 },
+  tension:   { family: "fear",   lead: "marimba", support: ["cello", "strings"], bpm: [66, 94],  scale: PHRYGIAN,style: "pulse",    register: 62, room: 0.48 },
+  horror:    { family: "fear",   lead: "cello",   support: ["strings", "marimba"],bpm: [50, 80],  scale: PHRYGIAN,style: "sparse",   register: 55, room: 0.65 },
+  mystery:   { family: "fear",   lead: "harp",    support: ["cello", "marimba"], bpm: [56, 83],  scale: DORIAN,   style: "sparse",   register: 64, room: 0.50 },
+  battle:    { family: "fight",  lead: "strings", support: ["cello", "marimba"], bpm: [98, 126], scale: MINOR,    style: "drive",    register: 64, room: 0.45 },
+  anger:     { family: "fight",  lead: "cello",   support: ["strings", "marimba"],bpm: [85, 112], scale: PHRYGIAN,style: "drive",    register: 60, room: 0.45 },
+  mystic:    { family: "wonder", lead: "harp",    support: ["marimba", "strings"],bpm: [52, 80],  scale: LYDIAN,   style: "arp",      register: 74, room: 0.65 },
 };
 const MUSIC_ACTIONS = ["keep", "change", "pause", "resume"];
 const ACTIONS = ["continue", "change", "silence", "non_story"];
 
 /** Shortest time a piece plays before another mood may replace it; same-family moods wait longer. */
-const MUSIC_HOLD_S = 20, FAMILY_HOLD_S = 60;
+export const MUSIC_HOLD_S = 6, FAMILY_HOLD_S = 10;
 /** Moods that may cut in before the hold expires: a sudden attack should not wait. */
 const URGENT = new Set(["battle", "horror"]);
 
@@ -39,12 +41,14 @@ const URGENT = new Set(["battle", "horror"]);
  * Whether a proposed mood replaces the playing piece. Below the hold time, or for a nearby mood, the current piece
  * only follows the new intensity. `heldS` is how long the current mood has played.
  */
+export function musicHoldSeconds(playing, next) {
+  return MOODS[next.mood].family === MOODS[playing.mood].family ? FAMILY_HOLD_S : MUSIC_HOLD_S;
+}
 export function shouldChangeMusic(playing, next, heldS) {
   if (!playing) return true;
   if (next.music_action !== "change" || next.mood === playing.mood) return false;
   if (URGENT.has(next.mood) && !URGENT.has(playing.mood)) return true;
-  const hold = MOODS[next.mood].family === MOODS[playing.mood].family ? FAMILY_HOLD_S : MUSIC_HOLD_S;
-  return heldS >= hold;
+  return heldS >= musicHoldSeconds(playing, next);
 }
 
 export const AMBIENCE = {

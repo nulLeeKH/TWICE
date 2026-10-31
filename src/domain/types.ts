@@ -30,7 +30,7 @@ export interface Settled { mode: "scroll" | "paged"; range: [number, number]; vi
 export interface Paragraph { idx: number; text: string; y: number; scope: string; key: string }
 export interface Frame {
   key: string; ids: number[]; range: [number, number]; view: number;
-  nonStory: boolean; decision?: Decision;
+  nonStory: boolean; decision?: Decision; recentLines?: string[];
 }
 export interface Batch { ids: number[]; currentIds: number[]; texts: string[] }
 export interface AnalysisProgress {
@@ -43,7 +43,7 @@ export interface AnalysisResult {
 }
 export interface Playback {
   sound: string; musicPaused: boolean; musicStarted: boolean;
-  context: string; previousScreen: string;
+  context: string; previousScreen: string; recentLines?: string[];
 }
 export interface Mix { master: number; music: number; ambience: number; sfx: number }
 export interface ModelStage { phase: string; started: number; elapsed: number; batch?: { current: number; merged: number } }
