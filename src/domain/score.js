@@ -54,11 +54,26 @@ export function shouldChangeMusic(playing, next, heldS) {
 export const AMBIENCE = {
   aero: { p: ["wind_speed", "howling", "gust_rate"], variants: ["breeze", "wind", "blizzard"] },
   water: { p: ["intensity", "movement", "depth"], variants: ["waves", "stream", "underwater", "waterfall"] },
-  particle: { p: ["density", "drop_size", "-"], variants: ["glass", "soil", "metal", "wood", "leaf"] },
+  particle: { p: ["density", "drop_size", "-"], variants: ["glass", "soil", "metal", "leaf"] },
   bio: { p: ["pitch", "chirp_rate", "distance"], variants: ["songbird", "cricket", "owl", "seagull", "crow", "wolf", "cicada"] },
   urban: { p: ["density", "activity", "distance"], variants: ["cafe", "traffic", "cabin", "kitchen", "crowd", "clockwork"] },
   psycho: { p: ["heartbeat_bpm", "tinnitus", "-"], variants: [] },
+  // v2 settings. Fire moved out of `particle` so it can sound under rain.
+  fire: { p: ["size", "pops", "distance"], variants: [] },
+  storm: { p: ["frequency", "loudness", "distance"], variants: ["distant", "close"] },
+  hooves: { p: ["pace", "hard_ground", "distance"], variants: ["trot", "carriage"] },
+  tavern: { p: ["crowd", "liveliness", "distance"], variants: [] },
+  cave: { p: ["drips", "drop_size", "distance"], variants: [] },
+  ship: { p: ["sea_roughness", "creak_level", "distance"], variants: [] },
+  room: { p: ["level", "-", "-"], variants: [] },
 };
+/** Most layers a scene can hold at once. */
+export const MAX_AMBIENCE = 4;
+/** One slot per generator, except animals: birds and crickets can sing together. */
+export const ambienceSlot = (a) => (a.engine === "bio" ? `bio.${a.variant ?? ""}` : a.engine);
+/** Older names that still arrive from cached decisions or the model. */
+const AMBIENCE_ALIASES = { "particle.wood": { engine: "fire" } };
+const unalias = (a) => (a && AMBIENCE_ALIASES[`${a.engine}.${a.variant}`] ? { ...a, ...AMBIENCE_ALIASES[`${a.engine}.${a.variant}`], variant: undefined } : a);
 // One-shots fired when the reader reaches paragraph `p`. p1 = strength.
 export const SFX = [
   "door_creak", "door_slam", "footsteps", "clock_ticks", "knock",
@@ -87,7 +102,7 @@ export const SCHEMA = {
     intensity: unit,
     ambience: {
       type: "array",
-      maxItems: 2,
+      maxItems: MAX_AMBIENCE,
       items: {
         type: "object",
         additionalProperties: false,
@@ -98,6 +113,7 @@ export const SCHEMA = {
           p1: unit,
           p2: unit,
           p3: unit,
+          indoor: { type: "boolean" },
         },
       },
     },
@@ -124,8 +140,8 @@ export function normalizeSegment(s) {
   const mood = pick(s.mood, Object.keys(MOODS), "calm");
   const seen = new Set();
   const ambience = (Array.isArray(s.ambience) ? s.ambience : [])
-    .filter((a) => AMBIENCE[a?.engine] && !seen.has(a.engine) && seen.add(a.engine))
-    .slice(0, 2)
+    .map(unalias)
+    .filter((a) => AMBIENCE[a?.engine])
     .map((a) => {
       const vs = AMBIENCE[a.engine].variants;
       return {
@@ -134,8 +150,11 @@ export function normalizeSegment(s) {
         p1: clamp(a.p1, 0, 1, 0.5),
         p2: clamp(a.p2, 0, 1, 0.5),
         p3: clamp(a.p3, 0, 1, 0.5),
+        ...(a.indoor === true ? { indoor: true } : {}),
       };
-    });
+    })
+    .filter((a) => !seen.has(ambienceSlot(a)) && seen.add(ambienceSlot(a)))
+    .slice(0, MAX_AMBIENCE);
   const sfx = (Array.isArray(s.sfx) ? s.sfx : [])
     .filter((x) => SFX.includes(x?.type) && Number.isInteger(x.p))
     .slice(0, 1)
@@ -154,7 +173,7 @@ export function normalizeSegment(s) {
   };
 }
 
-const ambKey = (a) => a.engine + (a.variant ? `.${a.variant}` : "");
+const ambKey = (a) => a.engine + (a.variant ? `.${a.variant}` : "") + (a.indoor ? "@in" : "");
 /** True when the ambience layers or their levels differ enough to be worth a crossfade. */
 export function ambienceChanged(a, b) {
   if (a.map(ambKey).sort().join("+") !== b.map(ambKey).sort().join("+")) return true;
@@ -367,7 +386,7 @@ const AMBIENCE_RULES = [
   { engine: "water", variant: "underwater", p1: 0.6, p2: 0.4, p3: 0.85, re: /물속|수중|심해|깊은\s*물\s*아래|가라앉으며|\b(?:underwater|submerged|deep\s*beneath\s*the\s*water)\b/i },
   { engine: "water", variant: "stream", p1: 0.52, p2: 0.55, p3: 0.35, re: /시냇물|계곡|강물|강가|졸졸\s*흐르|개울|호수|연못|분수|물방울이?\s*떨어|하수구|\b(?:flowing\s*stream|babbling\s*brook|creek|river|lakeside|fountain|dripping\s*water|sewer)\b/i },
   { engine: "water", variant: "waves", p1: 0.6, p2: 0.5, p3: 0.5, re: /파도|철썩|바닷가|해변|해안|바다|항구|부두|갑판|배\s*위|\b(?:ocean\s*waves|waves?\s*crashed|waves?\s*lapped|seashore|beach|harbor|ship\s*deck)\b/i },
-  { engine: "particle", variant: "wood", p1: 0.58, p2: 0.52, p3: 0, re: /장작|모닥불|벽난로|불꽃이?\s*타|타닥타닥|화로|횃불|불길|화염이?\s*타오르|\b(?:campfire|fireplace|crackling\s*fire|burning\s*logs|torch|flames?\s*crackled|blaze)\b/i },
+  { engine: "fire", variant: undefined, p1: 0.58, p2: 0.52, p3: 0.15, re: /장작|모닥불|벽난로|불꽃이?\s*타|타닥타닥|화로|횃불|불길|화염이?\s*타오르|\b(?:campfire|fireplace|crackling\s*fire|burning\s*logs|torch|flames?\s*crackled|blaze)\b/i },
   { engine: "particle", variant: "leaf", p1: 0.48, p2: 0.42, p3: 0, re: /낙엽|나뭇잎|수풀|풀숲|덤불|숲속|우거진\s*나무|산길|\b(?:rustling\s*leaves|dry\s*leaves|bushes|thick\s*forest|woods)\b/i },
   { engine: "particle", variant: "glass", p1: 0.52, p2: 0.48, p3: 0, re: /창문.{0,12}비|창가.{0,12}빗|유리창.{0,12}빗|\b(?:rain\s*against\s*the\s*window|raindrops?\s*on\s*the\s*glass)\b/i },
   { engine: "particle", variant: "soil", p1: 0.58, p2: 0.52, p3: 0, re: /비가\s*내리|빗소리|빗방울|빗줄기|장대비|소나기|폭우|우산|빗물|젖은\s*거리|먹구름|\b(?:rain\s*fell|raining|downpour|drizzle|sound\s*of\s*rain|rainstorm|wet\s*pavement)\b/i },
@@ -378,8 +397,16 @@ const AMBIENCE_RULES = [
   { engine: "bio", variant: "seagull", p1: 0.5, p2: 0.45, p3: 0.4, re: /갈매기|바닷새|\b(?:seagulls?\s*cried|gulls?\s*overhead)\b/i },
   { engine: "bio", variant: "cricket", p1: 0.46, p2: 0.5, p3: 0.3, re: /풀벌레|귀뚜라미|밤벌레|고요한\s*밤하늘|별빛\s*아래|\b(?:crickets?\s*chirp|night\s*insects|quiet\s*night\s*sky)\b/i },
   { engine: "bio", variant: "songbird", p1: 0.46, p2: 0.5, p3: 0.3, re: /새소리|새가\s*지저귀|산새|참새|아침\s*햇살|\b(?:birds?\s*chirp|birdsong|singing\s*birds|morning\s*sunlight)\b/i },
+  { engine: "storm", variant: "close", p1: 0.6, p2: 0.75, p3: 0.2, re: /벼락|번개가?\s*(?:내리|번쩍|떨어)|천둥이?\s*(?:울리|터지|쳤|내리)|뇌성|\b(?:thunder\s*(?:crashed|cracked|boomed)|lightning\s*(?:struck|flashed)|crack\s*of\s*thunder)\b/i },
+  { engine: "storm", variant: "distant", p1: 0.45, p2: 0.5, p3: 0.5, re: /천둥|먼\s*곳에서\s*우르릉|우르릉|뇌우|폭풍우|\b(?:thunder|distant\s*rumble|thunderstorm|storm\s*clouds)\b/i },
+  { engine: "hooves", variant: "carriage", p1: 0.5, p2: 0.6, p3: 0.3, re: /마차|수레|짐마차|\b(?:carriage|coach|wagon|cart\s*rolled)\b/i },
+  { engine: "hooves", variant: "trot", p1: 0.55, p2: 0.6, p3: 0.35, re: /말발굽|말을\s*(?:타|몰)|말\s*위|기마|승마|말이\s*달|\b(?:hoofbeats|hooves|on\s*horseback|galloping|rode\s*(?:a|his|her|the)\s*horse)\b/i },
+  { engine: "tavern", variant: undefined, p1: 0.55, p2: 0.55, p3: 0.2, re: /선술집|주점|객잔|여관\s*1층|술집|\b(?:tavern|inn|pub|alehouse)\b/i },
+  { engine: "cave", variant: undefined, p1: 0.45, p2: 0.5, p3: 0.2, re: /동굴|석굴|종유석|지하\s*호수|\b(?:cave|cavern|grotto)\b/i },
+  { engine: "ship", variant: undefined, p1: 0.6, p2: 0.55, p3: 0.2, re: /갑판|선상|배\s*위|돛|항해|\b(?:on\s*deck|ship's\s*deck|aboard\s*the\s*ship|set\s*sail|sailing)\b/i },
+  { engine: "room", variant: undefined, p1: 0.45, p2: 0, p3: 0, re: /적막한\s*방|고요한\s*방|빈\s*방|정적이\s*(?:흐르|감도)|\b(?:silent\s*room|empty\s*room|still\s*room|quiet\s*room)\b/i },
   { engine: "urban", variant: "kitchen", p1: 0.5, p2: 0.55, p3: 0.3, re: /주방|부엌|요리하는|냄비가\s*끓|식탁\s*위|\b(?:in\s*the\s*kitchen|kitchen\s*clatter|dining\s*table)\b/i },
-  { engine: "urban", variant: "cafe", p1: 0.48, p2: 0.48, p3: 0.35, re: /카페|커피숍|찻집|선술집|주점|객잔|여관\s*1층|레스토랑|식당\s*안|\b(?:cafe|coffee\s*shop|tavern|inn|pub|restaurant)\b/i },
+  { engine: "urban", variant: "cafe", p1: 0.48, p2: 0.48, p3: 0.35, re: /카페|커피숍|찻집|레스토랑|식당\s*안|\b(?:cafe|coffee\s*shop|restaurant)\b/i },
   { engine: "urban", variant: "traffic", p1: 0.55, p2: 0.5, p3: 0.4, re: /도로|차도|오가는\s*차|거리의\s*소음|교차로|빌딩\s*숲|도심|아스팔트|골목길|\b(?:street\s*traffic|passing\s*cars|city\s*traffic|busy\s*road|downtown|city\s*street|alleyway)\b/i },
   { engine: "urban", variant: "cabin", p1: 0.5, p2: 0.42, p3: 0.3, re: /기차\s*안|열차|비행기\s*기내|차\s*안|마차\s*안|선실|객실|\b(?:train\s*cabin|inside\s*the\s*train|airplane\s*cabin|inside\s*the\s*(?:car|carriage))\b/i },
   { engine: "urban", variant: "crowd", p1: 0.56, p2: 0.56, p3: 0.4, re: /군중|인파|시장|광장|웅성거리는|시끌벅적|연회장|무도회장|경기장|관중석|길드\s*홀|로비|복도|교실|\b(?:noisy\s*crowd|bustling\s*market|crowded\s*hall|murmur\s*of\s*the\s*crowd|banquet\s*hall|arena|stadium|guild\s*hall|corridor)\b/i },
@@ -398,45 +425,58 @@ export function groundAmbience(ambience, text, prevAmbience = [], action = "chan
   const list = Array.isArray(ambience) ? ambience : [];
   const prevList = Array.isArray(prevAmbience) ? prevAmbience : [];
   const ended = AMBIENCE_END_RE.test(text);
-  const matchedByEngine = new Map();
+  // One match per slot: animals match per species, every other generator once.
+  const matchedBySlot = new Map();
   if (!ended) {
     for (const rule of AMBIENCE_RULES) {
-      if (!matchedByEngine.has(rule.engine) && rule.re.test(text)) {
-        matchedByEngine.set(rule.engine, rule);
-      }
+      const slot = ambienceSlot(rule);
+      if (!matchedBySlot.has(slot) && rule.re.test(text)) matchedBySlot.set(slot, rule);
     }
   }
+  const findMatch = (item) => {
+    const exact = matchedBySlot.get(ambienceSlot(item));
+    if (exact || item.engine !== "bio") return exact;
+    for (const [slot, rule] of matchedBySlot) if (rule.engine === "bio" && !seen.has(slot)) return rule;
+    return undefined;
+  };
   const canContinuePrev = action === "continue" && !ended;
-  const prevEngines = new Set(prevList.map((a) => a?.engine).filter(Boolean));
+  const prevSlots = new Set(prevList.filter((a) => a?.engine).map(ambienceSlot));
   const guards = [];
   const kept = [];
   const seen = new Set();
+  const indoor = (item) => (item.indoor === true ? { indoor: true } : {});
 
-  for (const item of list) {
-    if (!item?.engine || !AMBIENCE[item.engine] || seen.has(item.engine)) continue;
-    const matched = matchedByEngine.get(item.engine);
+  for (const raw of list) {
+    const item = unalias(raw);
+    if (!item?.engine || !AMBIENCE[item.engine]) continue;
+    const matched = findMatch(item);
+    const variant = matched?.variant ? (item.variant && AMBIENCE[item.engine]?.variants.includes(item.variant) ? item.variant : matched.variant) : item.variant;
+    const slot = ambienceSlot({ engine: item.engine, variant });
+    if (seen.has(slot)) continue;
     if (matched) {
-      seen.add(item.engine);
+      seen.add(slot); seen.add(ambienceSlot(matched));
       kept.push({
         engine: item.engine,
-        ...(matched.variant ? { variant: item.variant && AMBIENCE[item.engine]?.variants.includes(item.variant) ? item.variant : matched.variant } : {}),
+        ...(matched.variant ? { variant } : {}),
         p1: clamp(item.p1, 0.3, 0.9, matched.p1),
         p2: clamp(item.p2, 0.25, 0.9, matched.p2),
         p3: clamp(item.p3, 0, 0.9, matched.p3),
+        ...indoor(item),
       });
     } else if (item.engine === "psycho") {
       guards.push("psycho 제외");
-    } else if (!ended && (canContinuePrev && prevEngines.has(item.engine))) {
-      seen.add(item.engine);
+    } else if (!ended && (canContinuePrev && prevSlots.has(slot))) {
+      seen.add(slot);
       kept.push(item);
     } else if (!ended && item.variant && AMBIENCE[item.engine]?.variants.includes(item.variant) && text.trim().length >= 35) {
-      seen.add(item.engine);
+      seen.add(slot);
       kept.push({
         engine: item.engine,
         variant: item.variant,
         p1: clamp(item.p1, 0.3, 0.85, 0.5),
         p2: clamp(item.p2, 0.25, 0.85, 0.45),
         p3: clamp(item.p3, 0, 0.85, 0.35),
+        ...indoor(item),
       });
     } else {
       guards.push(`${item.engine} 제외`);
@@ -444,12 +484,12 @@ export function groundAmbience(ambience, text, prevAmbience = [], action = "chan
   }
 
   // If the text explicitly describes an environment that the model missed, add it automatically.
-  for (const [engine, rule] of matchedByEngine) {
-    if (kept.length >= 2) break;
-    if (seen.has(engine)) continue;
-    seen.add(engine);
+  for (const [slot, rule] of matchedBySlot) {
+    if (kept.length >= MAX_AMBIENCE) break;
+    if (seen.has(slot)) continue;
+    seen.add(slot);
     kept.push({
-      engine,
+      engine: rule.engine,
       ...(rule.variant ? { variant: rule.variant } : {}),
       p1: rule.p1,
       p2: rule.p2,
@@ -457,7 +497,7 @@ export function groundAmbience(ambience, text, prevAmbience = [], action = "chan
     });
   }
 
-  return { ambience: kept.slice(0, 2), guards };
+  return { ambience: kept.slice(0, MAX_AMBIENCE), guards };
 }
 
 const SFX_ALIASES = {

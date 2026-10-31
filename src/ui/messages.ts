@@ -226,6 +226,15 @@ export const messages: Record<string, string> = {
   "기계음": "Clockwork",
   "실내 소음": "Indoor ambience",
   "심장 박동": "Heartbeat",
+  "먼 천둥": "Distant thunder",
+  "가까운 천둥": "Close thunder",
+  "말발굽": "Horse trot",
+  "마차": "Horse & carriage",
+  "선술집": "Tavern",
+  "동굴 물방울": "Cave drips",
+  "갑판 삐걱임": "Ship's deck",
+  "고요한 방": "Quiet room tone",
+  "실내에서 들림": "Heard from inside",
 
   // Effects
   "문 삐걱임": "Door creak",

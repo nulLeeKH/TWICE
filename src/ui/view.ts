@@ -49,7 +49,14 @@ const musicActions: Record<string, string> = { keep: "유지", change: "변경",
 function layerName(layer: Ambience) {
   if (layer.engine === "aero") return ({ breeze: "산들바람", wind: "바람", blizzard: "눈보라" } as Record<string, string>)[layer.variant ?? "wind"] ?? "바람";
   if (layer.engine === "water") return ({ waves: "파도", stream: "시냇물", underwater: "수중", waterfall: "폭포" } as Record<string, string>)[layer.variant ?? "waves"] ?? "물소리";
-  if (layer.engine === "particle") return ({ glass: "창가 비", soil: "빗소리", metal: "양철 지붕 비", wood: "장작불", leaf: "낙엽" } as Record<string, string>)[layer.variant ?? "glass"] ?? "빗소리";
+  if (layer.engine === "particle") return ({ glass: "창가 비", soil: "빗소리", metal: "양철 지붕 비", leaf: "낙엽" } as Record<string, string>)[layer.variant ?? "glass"] ?? "빗소리";
+  if (layer.engine === "fire") return "장작불";
+  if (layer.engine === "storm") return layer.variant === "close" ? "가까운 천둥" : "먼 천둥";
+  if (layer.engine === "hooves") return layer.variant === "carriage" ? "마차" : "말발굽";
+  if (layer.engine === "tavern") return "선술집";
+  if (layer.engine === "cave") return "동굴 물방울";
+  if (layer.engine === "ship") return "갑판 삐걱임";
+  if (layer.engine === "room") return "고요한 방";
   if (layer.engine === "bio") return ({ songbird: "새소리", cricket: "풀벌레", owl: "부엉이", seagull: "갈매기", crow: "까마귀", wolf: "늑대", cicada: "매미" } as Record<string, string>)[layer.variant ?? "songbird"] ?? "자연음";
   if (layer.engine === "urban") return ({ cafe: "카페 소음", traffic: "거리 소음", cabin: "객실 소음", kitchen: "주방 소음", crowd: "군중 소음", clockwork: "기계음" } as Record<string, string>)[layer.variant ?? "cafe"] ?? "실내 소음";
   return "심장 박동";
@@ -199,8 +206,9 @@ export class AppView {
       const dot = document.createElement("span"); dot.className = "dot"; dot.setAttribute("aria-hidden", "true");
       const text = document.createElement("div"); text.className = "text";
       const name = document.createElement("div"); name.className = "name"; name.textContent = t(layerName(layer));
+      if (layer.indoor) { const detail = document.createElement("div"); detail.className = "detail"; detail.textContent = t("실내에서 들림"); text.append(detail); }
       const level = document.createElement("span"); level.className = "level"; level.textContent = t(`${Math.round(layer.p1 * 100)}%`);
-      text.append(name); card.append(dot, text, level); layers.append(card);
+      text.prepend(name); card.append(dot, text, level); layers.append(card);
     }
   }
   private startAuraLoop() {

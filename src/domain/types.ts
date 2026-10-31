@@ -10,7 +10,7 @@ export interface ModelState {
   external?: string;
   component?: string;
 }
-export interface Ambience { engine: string; variant?: string; p1: number; p2: number; p3: number }
+export interface Ambience { engine: string; variant?: string; p1: number; p2: number; p3: number; indoor?: boolean }
 export interface Effect { p: number; type: string; p1: number }
 export interface Decision {
   action: "continue" | "change" | "silence" | "non_story";
