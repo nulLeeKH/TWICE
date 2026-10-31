@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Transcript } from "../src/domain/transcript";
 import { completeJsonFields, groundAmbience, groundSfx, linesToParagraphs, MOODS, navigationKind, normalizeSegment, screenDecision, shouldChangeMusic, filterOcrLines } from "../src/domain/score.js";
-import { accompany, arrangement, compose, INSTRUMENTS, percussionPattern, preventShortMelodyLoops } from "../src/audio/music.js";
+import { accompany, arrangement, compose, INSTRUMENTS, percussionPattern, preventShortMelodyLoops } from "@twice/sound";
 const view = { range: [0, 800] as [number, number], view: 1 };
 describe("deduplicated observation queue", () => {
   it("merges overlapping fragments and batches current plus intermediate screens exactly once", () => {

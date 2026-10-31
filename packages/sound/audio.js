@@ -2,7 +2,7 @@
 import { createSequencer } from "./music.js";
 import { playSfx } from "./sfx.js";
 import { sine, modal, noiseHit } from "./synthesis.js";
-import { ambienceSlot } from "../domain/score.js";
+import { ambienceSlot } from "./scene.js";
 
 const LOOKAHEAD = 0.2; // seconds scheduled ahead of currentTime
 const MUSIC_AHEAD = 0.75; // reserve music before inference completion/DOM work can stall the main thread
@@ -260,7 +260,7 @@ export function createEngine(ctx = new AudioContext()) {
       g.cancelAndHoldAtTime(t);
       g.linearRampToValueAtTime(on ? 0 : 1, t + Math.max(0.01, sec));
     },
-    /** Applies a normalized segment (score.js): music next bar, ambience crossfades, space changes smoothly. */
+    /** Applies a normalized segment (scene.js): music next bar, ambience crossfades, space changes smoothly. */
     setScene(s) {
       applyScene(s, true);
     },

@@ -9,18 +9,19 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 
-const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../src");
+const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../packages/sound");
 const CHROME =
   process.env.CHROME ??
   path.join(os.homedir(), ".cache/puppeteer/chrome/mac_arm-152.0.7977.42/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing");
 
 if (!fs.existsSync(CHROME)) throw new Error("Chrome for Testing을 찾지 못했습니다. CHROME 환경 변수에 실행 파일을 지정해 주세요.");
 
-// Serves the DSP modules for offline Web Audio testing.
+// Serves the @twice/sound package for offline Web Audio testing.
 const server = http.createServer((req, res) => {
   const p = decodeURIComponent(new URL(req.url, "http://x").pathname);
   if (p === "/") return res.writeHead(200, { "content-type": "text/html" }).end("<!doctype html><title>audio-check</title>");
-  const routes = { "/audio.js": path.join(root,"audio/audio.js"), "/music.js":path.join(root,"audio/music.js"), "/score.js":path.join(root,"domain/score.js"), "/acoustic.js":path.join(root,"audio/acoustic.js"), "/sfx.js":path.join(root,"audio/sfx.js"), "/synthesis.js":path.join(root,"audio/synthesis.js") };
+  // @twice/sound served as plain files to a plain page: no extension, no bundler. /score.js is the scene contract.
+  const routes = { "/score.js": path.join(root, "scene.js") };
   const f = p === "/audio.js" && process.env.AUDIO_JS ? path.resolve(process.env.AUDIO_JS) : routes[p] ?? path.join(root,p);
   if (!fs.existsSync(f) || (!f.startsWith(root) && f !== path.resolve(process.env.AUDIO_JS ?? ""))) return res.writeHead(404).end();
   res.writeHead(200, { "content-type": "text/javascript" });

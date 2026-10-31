@@ -1,6 +1,6 @@
 import { bindStaticCopy, i18n, t, type UiLanguage } from "./i18n";
 import type { Ambience, Decision, ModelState } from "../domain/types";
-import { arrangement } from "../audio/music.js";
+import { arrangement } from "@twice/sound";
 import type { NanoClient } from "../model/nano";
 import type { ReaderRuntime } from "../session/runtime";
 

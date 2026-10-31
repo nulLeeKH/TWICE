@@ -21,7 +21,7 @@ const harness = vi.hoisted(() => {
   return { browser, engines, engine: () => { const result = engine(); engines.push(result); return result; } };
 });
 vi.mock("wxt/browser", () => ({ browser: harness.browser }));
-vi.mock("../src/audio/audio.js", () => ({ createEngine: harness.engine }));
+vi.mock("@twice/sound", () => ({ createEngine: harness.engine }));
 import { ReaderRuntime } from "../src/session/runtime";
 let runtime: ReaderRuntime;
 let model: { ready: boolean; state: { external?: string }; prepare: ReturnType<typeof vi.fn>; decide: ReturnType<typeof vi.fn>; planChapter: ReturnType<typeof vi.fn>; dispose: ReturnType<typeof vi.fn>; cancelPreparation: ReturnType<typeof vi.fn> };

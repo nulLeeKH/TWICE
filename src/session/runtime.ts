@@ -1,5 +1,5 @@
 import { browser } from "wxt/browser";
-import { createEngine } from "../audio/audio.js";
+import { createEngine } from "@twice/sound";
 import { Transcript } from "../domain/transcript";
 import { chapterChunks, eligibleChapter, mapChapterChunk, type ChapterBlock } from "../domain/chapter";
 import { ambienceChanged, musicHoldSeconds, navigationKind, normalizeSegment, SFX_GAP_S, shouldChangeMusic } from "../domain/score.js";
@@ -345,7 +345,7 @@ export class ReaderRuntime {
     if (this.ocrLineHistory.length > 1500) this.ocrLineHistory = this.ocrLineHistory.slice(-1000);
   }
 
-  private async capture(shot: Shot) {
+  private async capture(shot: Shot, retries = 3) {
     if (!this.connected || this.state.away || this.disposed || (this.chapter?.decisions.has(this.chapter.currentIndex))) return;
     if (this.moving && this.pendingCount >= 400) { this.state.dropped++; this.emit(); return; }
     const tabId = this.state.tabId!, windowId = this.state.windowId!, generation = this.generation, episode = this.episode;
@@ -364,7 +364,13 @@ export class ReaderRuntime {
         this.shots.push({ shot, snapshot, key, generation, episode });
       }
       void this.drainOcr(); this.emit();
-    } catch (error) { if (generation === this.generation && !this.state.away) { this.event(`캡처 대기: ${messageOf(error)}`); this.state.message = "화면 캡처 실패 · 다시 시도해 주세요."; this.emit(); } }
+    } catch (error) {
+      // Chrome allows only a couple of captures per second; a quick scroll back must not leave the screen unread.
+      // The retry drops itself if the reader has moved on (the view check above).
+      if (retries > 0 && /MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND/.test(messageOf(error)) && generation === this.generation) {
+        setTimeout(() => void this.capture(shot, retries - 1), 600); return;
+      }
+      if (generation === this.generation && !this.state.away) { this.event(`캡처 대기: ${messageOf(error)}`); this.state.message = "화면 캡처 실패 · 다시 시도해 주세요."; this.emit(); } }
   }
   private async drainOcr() {
     if (this.state.ocrBusy) return; this.state.ocrBusy = true; this.emit();

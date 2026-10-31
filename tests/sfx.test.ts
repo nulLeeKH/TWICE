@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { normalizeSegment, SFX, SFX_GAP_S } from "../src/domain/score.js";
-import { playSfx, SFX_TYPES } from "../src/audio/sfx.js";
+import { playSfx, SFX_TYPES } from "@twice/sound";
 
 function fixture() {
   const nodes: { kind: string; gain: { value: number }; connect: ReturnType<typeof vi.fn> }[] = [];
