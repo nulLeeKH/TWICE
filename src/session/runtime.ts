@@ -44,7 +44,6 @@ export class ReaderRuntime {
   private previousScreen = "";
   private chapter: ChapterState | null = null;
   private chapterPlanning = false;
-  private provisionalMusic = false;
   private connectStart = 0;
   private ocrLineHistory: { text: string; y: number }[] = [];
   private fired = new Set<string>();
@@ -163,23 +162,17 @@ export class ReaderRuntime {
       this.engine ??= createEngine();
       Object.assign(this.state, { tabId: tab.id, windowId: tab.windowId, title: tab.title ?? "읽는 페이지", url: tab.url, status: "reading", userPaused: false, away: false, message: "화면을 읽는 중…" });
       this.applyMix();
-      // Start quiet acoustic music immediately. Neither OCR nor a remote model is required
-      // for the first sound; the first real scene bypasses the usual 6/10-second hold.
-      const provisional = normalizeSegment({ action: "continue", music_action: "change", mood: "calm", intensity: 0.22, ambience: [], sfx: [] }) as Decision;
-      this.engine.setScene(provisional); this.provisionalMusic = true;
-      this.state.playing = provisional; this.lastMusicAt = Date.now();
-      this.debug.application = "초기 임시 음악 · 분석 대기";
-      this.debug.timing.startupMusic = performance.now() - this.connectStart;
-      this.event("임시 음악 재생 · 실제 장면 분석 대기");
+      // Unlock audio on the user's click, but wait for an analyzed scene before playing.
+      this.debug.application = "첫 장면 분석 대기";
       await this.updateTransport(); await this.inject(); this.event("연결 시작");
       // The model may take much longer than the first notes to initialize.
       void prepared.then(result => {
         if (intent !== this.connectionIntent || this.disposed || !this.connected) return;
         if (!result.ok) {
           this.state.alert = `AI 준비 실패: ${messageOf(result.error)}`;
-          this.state.phase = "임시 음악 · AI 연결 실패";
+          this.state.phase = "AI 연결 실패";
           if (this.chapter) this.state.analysisMode = "chapter-fallback";
-          this.event("AI 준비 실패 · 임시 음악 유지");
+          this.event("AI 준비 실패 · 재시도 필요");
         } else {
           this.scheduleChapterPlanning();
           if (this.current && !this.chapter?.decisions.has(this.chapter.currentIndex)) {
@@ -512,7 +505,7 @@ export class ReaderRuntime {
     if (this.state.hush === "non_story" || (this.state.hush && ["change", "resume"].includes(decision.music_action))) { this.engine.hush(false, 1.5); this.state.hush = null; }
     const before = this.state.playing;
     const firstMusic = !this.engine.scene && decision.music_action !== "pause";
-    const change = firstMusic || (this.provisionalMusic && decision.music_action !== "pause") ||
+    const change = firstMusic ||
       (!!before && shouldChangeMusic(before, decision, (Date.now() - this.lastMusicAt) / 1000));
     const held = !change && !!before && decision.music_action === "change" && decision.mood !== before.mood;
     // If the reader stops scrolling before the minimum hold elapses, still make the pending
@@ -533,8 +526,7 @@ export class ReaderRuntime {
     else if (["change", "resume"].includes(decision.music_action)) { this.engine.pauseMusic(false); this.state.musicPaused = false; }
     if (change) {
       this.engine.setScene(applied); this.lastMusicAt = Date.now();
-      this.provisionalMusic = false;
-      if (this.debug.timing.startupMusic !== undefined && this.debug.timing.firstScoredMusic === undefined)
+      if (this.debug.timing.firstScoredMusic === undefined)
         this.debug.timing.firstScoredMusic = performance.now() - this.connectStart;
     }
     else if (before && (ambienceChanged(before.ambience, applied.ambience) || Math.abs(before.intensity - applied.intensity) >= 0.1)) this.engine.updateScene(applied);
@@ -576,7 +568,7 @@ export class ReaderRuntime {
     this.generation++; this.episode = 0; this.abort?.abort(new DOMException("연결 초기화", "AbortError")); this.analyzingKey = null; this.clearChapter(); this.ocrLineHistory = [];
     if (this.heldMusicTimer !== null) { clearTimeout(this.heldMusicTimer); this.heldMusicTimer = null; }
     this.transcript.clear(); this.shots = []; this.nextFrame = null; this.current = null; this.settled = null; this.moving = false;
-    this.waitingEpisode = false; this.previousScreen = ""; this.provisionalMusic = false; this.fired.clear(); this.lastEffect = -Infinity; this.lastEffectKey = ""; this.lastMusicAt = -Infinity; this.preview = null;
+    this.waitingEpisode = false; this.previousScreen = ""; this.fired.clear(); this.lastEffect = -Infinity; this.lastEffectKey = ""; this.lastMusicAt = -Infinity; this.preview = null;
     Object.assign(this.debug, { stage: null, input: "", raw: "", context: "", proposed: null, applied: null, application: "", effects: "", timing: {}, events: [] });
     Object.assign(this.state, { analysisMode: "OCR", playing: null, lastEffect: null, musicPaused: false, hush: null, alert: null, position: "", phase: "", ocrCount: 0, ocrSkipped: 0, dropped: 0, lines: 0 });
     if (closeAudio) { const old = this.engine; this.engine = null; if (old) await old.close().catch(() => {}); }
@@ -590,7 +582,7 @@ export class ReaderRuntime {
     await this.clearSession(true);
     Object.assign(this.state, { status: "idle", message, title: "소설 탭을 열어주세요", url: "", windowId: null, userPaused: false, away: false }); this.emit();
   }
-  diagnostics() { return { ...this.debug, state: { ...this.state, mix: { ...this.state.mix }, muted: { ...this.state.muted } }, queue: { capture: this.queueCount, paragraphs: this.pendingCount, merged: this.transcript.merged, readingFocus: "화면 가운데 50% (2·3사분면)", provisional: this.provisionalMusic, fullChapter: this.chapter ? { blocks: this.chapter.blocks.length, analyzed: this.chapter.decisions.size, currentIndex: this.chapter.currentIndex, fallback: this.chapter.failed } : null }, audio: this.engine ? { context: this.engine.ctx.state, started: !!this.engine.scene, musicGain: this.engine.musicPauseGain.gain.value, musicRms: this.engine.musicLevel(), timing: this.engine.timing } : null }; }
+  diagnostics() { return { ...this.debug, state: { ...this.state, mix: { ...this.state.mix }, muted: { ...this.state.muted } }, queue: { capture: this.queueCount, paragraphs: this.pendingCount, merged: this.transcript.merged, readingFocus: "화면 가운데 50% (2·3사분면)", fullChapter: this.chapter ? { blocks: this.chapter.blocks.length, analyzed: this.chapter.decisions.size, currentIndex: this.chapter.currentIndex, fallback: this.chapter.failed } : null }, audio: this.engine ? { context: this.engine.ctx.state, started: !!this.engine.scene, musicGain: this.engine.musicPauseGain.gain.value, musicRms: this.engine.musicLevel(), timing: this.engine.timing } : null }; }
   async dispose() {
     this.disposed = true; this.listeners.clear(); browser.runtime.onMessage.removeListener(this.onMessage); browser.tabs.onActivated.removeListener(this.onActivated); browser.tabs.onUpdated.removeListener(this.onUpdated); browser.tabs.onRemoved.removeListener(this.onRemoved);
     await this.stop(); await this.vision.dispose(); this.model.dispose();
