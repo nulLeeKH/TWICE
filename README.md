@@ -8,6 +8,8 @@
 
 ## 시작하기
 
+처음 설치한다면 그림으로 정리한 [시작하기 안내서(PDF)](docs/TWICE_시작하기_안내서.pdf)를 먼저 보세요. 준비 사양, 설치, 온디바이스 AI·외부 API 설정, 읽기 시작까지 순서대로 담았습니다.
+
 [Releases](https://github.com/nulLeeKH/TWICE/releases)에서 `twice-<버전>-chrome.zip`을 받거나, 직접 빌드합니다.
 
 ```bash
