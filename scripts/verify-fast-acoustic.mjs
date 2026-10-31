@@ -1,8 +1,9 @@
 // Dependency-free smoke test. Run from project root:
 // node scripts/verify-fast-acoustic.mjs
 import assert from 'node:assert/strict';
+import { SFX_TYPES } from '../src/audio/sfx.js';
 import { MOODS, SFX, SFX_GAP_S, MUSIC_HOLD_S, FAMILY_HOLD_S, normalizeSegment, shouldChangeMusic } from '../src/domain/score.js';
-import { arrangement, instrumentCuePlan, percussionPattern, compose } from '../src/audio/music.js';
+import { arrangement, percussionPattern, compose } from '../src/audio/music.js';
 const acoustic = new Set(['strings', 'cello', 'harp', 'piano', 'marimba', 'timpani', 'bass_drum', 'frame_drum']);
 assert.equal(MUSIC_HOLD_S, 6);
 assert.equal(FAMILY_HOLD_S, 10);
@@ -22,11 +23,7 @@ for (const [mood, preset] of Object.entries(MOODS)) {
       assert.notEqual(JSON.stringify(piece.bars[j].melody), JSON.stringify(piece.bars[k].melody), `${mood}: identical melody bar within 8s`);
   }
 }
-for (const event of SFX) for (const r of [0.05, 0.45, 0.95]) {
-  const plan = instrumentCuePlan(event, 0.7, () => r);
-  assert.ok(plan.every(n => acoustic.has(n.instrument)), `${event} has disallowed voice`);
-  assert.ok(plan.every(n => n.offset + n.duration < 1.5), `${event} too long`);
-}
+assert.deepEqual([...SFX].sort(), [...SFX_TYPES].sort(), 'schema matches supported sound effects');
 const calm = normalizeSegment({mood: 'calm'});
 const to = mood => normalizeSegment({mood, music_action: 'change'});
 assert.equal(shouldChangeMusic(calm, to('sad'), 5), false);
@@ -34,7 +31,7 @@ assert.equal(shouldChangeMusic(calm, to('sad'), 6), true);
 assert.equal(shouldChangeMusic(calm, to('romance'), 9), false);
 assert.equal(shouldChangeMusic(calm, to('romance'), 10), true);
 assert.equal(shouldChangeMusic(calm, to('battle'), 0), true);
-console.log(`PASS: ${Object.keys(MOODS).length} moods, ${SFX.length} SFX types, ${compositions} compositions; acoustic palette and minimum holds verified.`);
+console.log(`PASS: ${Object.keys(MOODS).length} moods, ${SFX.length} SFX types, ${compositions} compositions; acoustic music palette, SFX coverage and minimum holds verified.`);
 
 for (const mood of ['calm', 'sad', 'romance', 'mystic', 'comedy'])
   for (let i = 0; i < 16; i++) assert.deepEqual(percussionPattern(mood, 1, i), []);

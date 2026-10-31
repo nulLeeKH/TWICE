@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Transcript } from "../src/domain/transcript";
-import { completeJsonFields, groundAmbience, groundSfx, linesToParagraphs, MOODS, navigationKind, normalizeSegment, screenDecision, shouldChangeMusic, filterOcrLines, SFX, SFX_GAP_S } from "../src/domain/score.js";
-import { accompany, arrangement, compose, INSTRUMENTS, instrumentCuePlan, percussionPattern, preventShortMelodyLoops } from "../src/audio/music.js";
+import { completeJsonFields, groundAmbience, groundSfx, linesToParagraphs, MOODS, navigationKind, normalizeSegment, screenDecision, shouldChangeMusic, filterOcrLines } from "../src/domain/score.js";
+import { accompany, arrangement, compose, INSTRUMENTS, percussionPattern, preventShortMelodyLoops } from "../src/audio/music.js";
 const view = { range: [0, 800] as [number, number], view: 1 };
 describe("deduplicated observation queue", () => {
   it("merges overlapping fragments and batches current plus intermediate screens exactly once", () => {
@@ -156,21 +156,7 @@ describe("decision and navigation contract", () => {
 });
 
 
-describe("instrument-only events and non-repetitive scoring", () => {
-  it("covers every story event with instrument voices, never sampled Foley", () => {
-    expect(SFX_GAP_S).toBe(8);
-    for (const type of SFX) {
-      const plan = instrumentCuePlan(type, 0.7, () => 0.6);
-      if (type === "sudden_silence") { expect(plan).toEqual([]); continue; }
-      expect(plan.length).toBeGreaterThan(0);
-      expect(plan.length).toBeLessThanOrEqual(3);
-      for (const note of plan) {
-        expect(INSTRUMENTS).toContain(note.instrument);
-        expect(note.offset).toBeGreaterThanOrEqual(0);
-        expect(note.offset + note.duration).toBeLessThan(1.5);
-      }
-    }
-  });
+describe("non-repetitive scoring", () => {
   it("prevents full-bar melody loops within eight seconds at slow and fast tempi", () => {
     for (const bpm of [45, 80, 155]) {
       const melody = () => [{ beat: 0, len: 2, note: 60 }, { beat: 2, len: 2, note: 64 }];
@@ -197,10 +183,6 @@ describe("gentle acoustic timbre policy", () => {
       expect(plan.parts.every((part: { instrument: string }) => acoustic.has(part.instrument))).toBe(true);
       expect(plan.percussion.every((name: string) => acoustic.has(name))).toBe(true);
     }
-  });
-  it("uses only gentle acoustic voices for all sound effect cues", () => {
-    for (const type of SFX) for (const random of [0.05, 0.45, 0.95])
-      expect(instrumentCuePlan(type, 1, () => random).every(note => acoustic.has(note.instrument))).toBe(true);
   });
 });
 

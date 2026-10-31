@@ -35,7 +35,7 @@ const instruments: Record<string, string> = {
 const effects: Record<string, string> = {
   door_creak: "문 삐걱임", door_slam: "문 쾅 닫힘", footsteps: "발걸음", clock_ticks: "시계 초침", knock: "노크",
   impact_wood: "나무 충격", impact_metal: "금속 충격", glass_shatter: "유리 파열", sub_drop: "저음 낙하", sudden_silence: "순간 정적",
-  chopping: "칼질", sizzle: "요리 지글거림", glass_clink: "잔 부딪힘", coin_drop: "동전 소리", phone_ring: "전화벨",
+  chopping: "칼질", sizzle: "요리 지글거림", glass_clink: "잔 부딪힘", phone_ring: "전화벨",
   camera_shutter: "카메라 셔터", keyboard: "키보드 타이핑", sword_clash: "칼싸움", arrow_shot: "화살 발사", magic_blast: "마법 파열",
   slap_punch: "타격음", whoosh: "바람 가르기", gunshot: "총성", explosion: "폭발", collapse: "붕괴음",
   car_crash: "교통사고 충돌", tire_screech: "급브레이크", siren: "사이렌", thunder: "천둥", water_splash: "물보라",

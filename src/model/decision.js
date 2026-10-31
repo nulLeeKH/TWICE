@@ -19,7 +19,7 @@ Fields in this exact order:
   aero: breeze|wind|blizzard; water: waves|stream|underwater|waterfall; particle: glass|soil|metal (rain), wood (fire), leaf (forest);
   bio: songbird|cricket|owl|seagull|crow|wolf|cicada; urban: cafe|traffic|cabin|kitchen|crowd|clockwork; psycho: explicitly audible heartbeat/ringing only.
   p1=volume, p2=movement, p3=distance, all 0..1.
-- sfx: 0-1 grounded, distinctly occurring event from a CURRENT paragraph, as {p: paragraph number, type, p1: strength}; [] is preferred if no clear event. Never replay events from earlier, imagined, denied, or merely described as possible. Effect renderer uses ONLY musical instruments for short non-looping accent cues, not realistic sound imitation.
+- sfx: 0-1 grounded, distinctly occurring event from a CURRENT paragraph, as {p: paragraph number, type, p1: strength}; [] is preferred if no clear event. Never replay events from earlier, imagined, denied, or merely described as possible. Effects use procedural sound synthesis for the named physical events. Choose only supported types; never replace an unavailable event with an unrelated sound.
   type: ${SFX.join(", ")}.
 - reason: <=8 English words stating the decisive narrative evidence, not a generic genre label.
 - context_summary: one concise English sentence updating the scene's story context and unresolved tension.
