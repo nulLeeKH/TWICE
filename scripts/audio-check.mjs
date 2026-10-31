@@ -19,7 +19,7 @@ if (!fs.existsSync(CHROME)) throw new Error("Chrome for Testing을 찾지 못했
 const server = http.createServer((req, res) => {
   const p = decodeURIComponent(new URL(req.url, "http://x").pathname);
   if (p === "/") return res.writeHead(200, { "content-type": "text/html" }).end("<!doctype html><title>audio-check</title>");
-  const routes = { "/audio.js": path.join(root,"audio/audio.js"), "/music.js":path.join(root,"audio/music.js"), "/score.js":path.join(root,"domain/score.js") };
+  const routes = { "/audio.js": path.join(root,"audio/audio.js"), "/music.js":path.join(root,"audio/music.js"), "/score.js":path.join(root,"domain/score.js"), "/acoustic.js":path.join(root,"audio/acoustic.js"), "/sfx.js":path.join(root,"audio/sfx.js"), "/synthesis.js":path.join(root,"audio/synthesis.js") };
   const f = p === "/audio.js" && process.env.AUDIO_JS ? path.resolve(process.env.AUDIO_JS) : routes[p] ?? path.join(root,p);
   if (!fs.existsSync(f) || (!f.startsWith(root) && f !== path.resolve(process.env.AUDIO_JS ?? ""))) return res.writeHead(404).end();
   res.writeHead(200, { "content-type": "text/javascript" });

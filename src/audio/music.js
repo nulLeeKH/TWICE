@@ -176,61 +176,9 @@ const INSTRUMENT_VOICES = {
     f.connect(g).connect(out);
   },
 };
-// Substitute locally rendered acoustic-inspired instruments without touching the cue/scene contracts.
+// Substitute locally rendered acoustic-inspired instruments without changing the music scene contract.
 Object.assign(INSTRUMENT_VOICES, acousticVoices);
 export const INSTRUMENTS = Object.keys(INSTRUMENT_VOICES);
-
-// Diegetic events are represented by short MUSICAL ACCENTS, never sampled noises,
-// voices, physical Foley or looping sound effects. The original event names remain
-// compatible with the model schema, storage, and existing diagnostics.
-const CUE_GROUPS = {
-  delicate: ["door_creak", "footsteps", "clock_ticks", "knock", "glass_clink", "coin_drop", "page_turn", "sigh", "gasp", "keyboard", "camera_shutter"],
-  bright: ["phone_ring", "bell", "crowd_cheer", "car_horn", "train_horn", "evil_laugh"],
-  impact: ["door_slam", "impact_wood", "impact_metal", "glass_shatter", "chopping", "slap_punch", "body_fall", "chain_rattle", "sword_clash", "blade_draw", "arrow_shot"],
-  danger: ["gunshot", "explosion", "collapse", "car_crash", "tire_screech", "siren", "thunder", "scream", "dog_bark", "low_rumble"],
-  atmospheric: ["sizzle", "whoosh", "water_splash", "crow_caw", "airplane", "flame_burst", "heartbeat_thump", "sub_drop"],
-  magical: ["magic_blast"],
-};
-const CUE_GROUP_OF = Object.fromEntries(Object.entries(CUE_GROUPS).flatMap(([group, names]) => names.map(name => [name, group])));
-const CUE_INSTRUMENTS = {
-  delicate: ["harp", "piano", "marimba"],
-  bright: ["marimba", "harp", "piano"],
-  impact: ["piano", "cello", "marimba"],
-  danger: ["cello", "strings", "marimba"],
-  atmospheric: ["marimba", "strings", "harp"],
-  magical: ["marimba", "harp", "piano"],
-};
-
-/** Pure plan: each cue is a brief (<= 1.5 seconds) non-looping instrument flourish.
- * Each accent is unique and non-looping (the scene runtime enforces >=8s between events).
- * Global minimum spacing is enforced separately by ReaderRuntime.
- */
-export function instrumentCuePlan(type, strength = 0.7, rnd = Math.random) {
-  if (type === "sudden_silence") return [];
-  const group = CUE_GROUP_OF[type];
-  if (!group) return [];
-  const voices = CUE_INSTRUMENTS[group];
-  const instrument = voices[Math.floor(rnd() * voices.length) % voices.length];
-  const root = group === "danger" ? 43 : group === "impact" ? 52 : group === "magical" ? 76 : 64;
-  const shift = Math.floor(rnd() * 7) - 3;
-  const notes = group === "danger" ? [0, 3, 7] : group === "impact" ? [0, -5, -8] :
-    group === "bright" ? [0, 4, 7] : group === "magical" ? [0, 7, 12] : [0, 2, 7];
-  const count = 1 + Math.floor(rnd() * (group === "delicate" ? 2 : 3));
-  const step = 0.14 + rnd() * 0.18;
-  const level = Math.max(0.15, Math.min(1, strength));
-  return Array.from({ length: count }, (_, i) => ({
-    instrument, note: root + shift + notes[i], offset: i * step,
-    duration: 0.12 + rnd() * 0.2, velocity: (0.5 + rnd() * 0.3) * level * (1 - i * 0.16),
-  }));
-}
-
-/** Use only the same instrument voice synthesizers as the score. */
-export function playInstrumentCue(ctx, out, at, type, strength = 0.7, rnd = Math.random) {
-  const notes = instrumentCuePlan(type, strength, rnd);
-  for (const note of notes) INSTRUMENT_VOICES[note.instrument](ctx, out, at + note.offset, note.note, note.duration, note.velocity);
-  return notes.length;
-}
-
 
 // ---- composition ----
 

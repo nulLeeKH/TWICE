@@ -63,7 +63,7 @@ export const AMBIENCE = {
 export const SFX = [
   "door_creak", "door_slam", "footsteps", "clock_ticks", "knock",
   "impact_wood", "impact_metal", "glass_shatter", "sub_drop", "sudden_silence",
-  "chopping", "sizzle", "glass_clink", "coin_drop", "phone_ring", "camera_shutter", "keyboard",
+  "chopping", "sizzle", "glass_clink", "phone_ring", "camera_shutter", "keyboard",
   "sword_clash", "arrow_shot", "magic_blast", "slap_punch", "whoosh",
   "gunshot", "explosion", "collapse", "car_crash", "tire_screech", "siren",
   "thunder", "water_splash", "crow_caw", "dog_bark", "gasp", "heartbeat_thump",
@@ -515,7 +515,6 @@ const SFX_TEXT_RULES = [
   ["chopping", 0.75, /도마\s*소리|칼질\s*소리|탁탁탁\s*썰|\b(?:chopping\s*on\s*the\s*board|knife\s*chopped)\b/i],
   ["sizzle", 0.75, /지글지글|프라이팬에\s*굽|\b(?:sizzled\s*in\s*the\s*pan|sizzling\s*sound)\b/i],
   ["glass_clink", 0.78, /잔을\s*부딪|술잔을\s*기울|찻잔을\s*내려놓|얼음이\s*부딪|건배를|\b(?:clinked\s*glasses|set\s*down\s*the\s*teacup|ice\s*clinked)\b/i],
-  ["coin_drop", 0.78, /동전이?\s*떨어|금화를?\s*던지|짤랑거리며\s*동전|\b(?:coin\s*dropped|tossed\s*a\s*gold\s*coin)\b/i],
   ["door_slam", 0.84, /문을?\s*쾅\s*닫|문이\s*쾅\s*닫히|거칠게\s*문을\s*열어젖|\b(?:slammed\s*the\s*door|door\s*slammed\s*shut|flung\s*the\s*door\s*open)\b/i],
   ["door_creak", 0.76, /문이\s*삐걱|삐거덕.{0,6}문|끼이익.{0,6}문이\s*열|조심스럽게\s*문을\s*열|\b(?:door\s*creaked|slowly\s*opened\s*the\s*door)\b/i],
   ["knock", 0.78, /노크\s*소리|문을\s*두드리|똑똑\s*문|\b(?:knocked\s*on\s*the\s*door|knock\s*at\s*the\s*door)\b/i],
