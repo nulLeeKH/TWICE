@@ -1,6 +1,7 @@
 // pnpm test:audio — renders the audio engine offline in headless Chrome for Testing: every mood plays, mood changes
 // crossfade without gaps, bars never end in silence, nothing clips, ducking/pause recover, every effect is audible
-// (with a per-effect loudness report against the music) and repeated SFX differ.
+// (with a per-effect loudness report against the music), repeated SFX differ, and every ambience layer is audible
+// (with a loudness report), four layers play together, and a rain material change glides without a gap.
 // Env: CHROME = Chrome for Testing binary; AUDIO_JS = alternative audio.js to serve (e.g. an older copy, to see the checks fail).
 import { spawn } from "node:child_process";
 import fs from "node:fs";
@@ -186,6 +187,50 @@ const PAGE = `(async () => {
   return JSON.stringify(R);
 })()`;
 
+// Ambience runs as its own evaluation so the main page stays inside the CDP timeout.
+const AMBIENCE_PAGE = `(async () => {
+  const { createEngine } = await import("/audio.js");
+  const { normalizeSegment, AMBIENCE } = await import("/score.js");
+  const SR = 44100, DT = (128 * 32) / SR;
+  async function render(sec, setup, actions = []) {
+    const ctx = new OfflineAudioContext(2, Math.ceil(SR * sec), SR);
+    const e = createEngine(ctx);
+    setup?.(e);
+    for (let k = 1; k * DT < sec - DT; k++)
+      ctx.suspend(k * DT).then(async () => {
+        for (const a of actions) if (!a.done && ctx.currentTime >= a.at) (a.done = true), a.fn(e);
+        await new Promise((r) => setTimeout(r, 20));
+        ctx.resume();
+      });
+    const b = await ctx.startRendering();
+    try { e.close(); } catch {}
+    return b;
+  }
+  const mono = (b) => { const l = b.getChannelData(0), r = b.getChannelData(1); return l.map((x, i) => (x + r[i]) / 2); };
+  const peak = (b) => Math.max(...[0, 1].map((c) => b.getChannelData(c).reduce((m, x) => Math.max(m, Math.abs(x)), 0)));
+  const rms = (x) => Math.sqrt(x.reduce((n, v) => n + v * v, 0) / x.length);
+  const scene = (ambience) => normalizeSegment({ mood: "calm", intensity: 0.5, ambience });
+  const R = { amb: {} };
+  for (const [engine, def] of Object.entries(AMBIENCE))
+    for (const variant of def.variants.length ? def.variants : [undefined]) {
+      const b = await render(6, (e) => { e.setScene(scene([{ engine, variant, p1: 0.6, p2: 0.5, p3: 0.2 }])); e.pauseMusic(true, 0.01); });
+      R.amb[engine + (variant ? "." + variant : "")] = { peak: peak(b), rms: rms(mono(b).slice(SR * 3)) };
+    }
+  // four layers at once: rain heard from inside, fire, and two animals sharing the stage, over music
+  const busy = normalizeSegment({ mood: "sad", intensity: 0.6, ambience: [
+    { engine: "particle", variant: "glass", p1: 0.6, p2: 0.5, p3: 0, indoor: true }, { engine: "fire", p1: 0.5, p2: 0.5, p3: 0.1 },
+    { engine: "bio", variant: "songbird", p1: 0.5, p2: 0.5, p3: 0.3 }, { engine: "bio", variant: "cricket", p1: 0.5, p2: 0.5, p3: 0.3 } ] });
+  const b = await render(6, (e) => e.setScene(busy));
+  R.layers = { count: busy.ambience.length, peak: peak(b) };
+  // rain on glass → rain on metal mid-scene: the layer glides instead of restarting, so the level never sags
+  const g = await render(10, (e) => { e.setScene(scene([{ engine: "particle", variant: "glass", p1: 0.6, p2: 0.5, p3: 0 }])); e.pauseMusic(true, 0.01); },
+    [{ at: 5, fn: (e) => e.updateScene(scene([{ engine: "particle", variant: "metal", p1: 0.6, p2: 0.5, p3: 0 }])) }]);
+  const x = mono(g), span = 4410; let floor = Infinity;
+  for (let i = SR * 5; i < SR * 9; i += span) floor = Math.min(floor, rms(x.slice(i, i + span)));
+  R.glide = floor / rms(x.slice(SR * 3, SR * 5));
+  return JSON.stringify(R);
+})()`;
+
 const results = [];
 const check = (name, ok, detail) => {
   results.push(ok);
@@ -212,6 +257,14 @@ try {
   const sfx = Object.values(R.sfx);
   check("every effect is audible and below clipping", sfx.every(x => x.peak <= 1 && x.rms > 0.005), `${sfx.length} effects, max peak ${f(Math.max(...sfx.map(x => x.peak)))}, min loudest rms ${f(Math.min(...sfx.map(x => x.rms)))}`);
   for (const t of ["knock", "footsteps"]) check(`(c) ${t} x5 envelopes differ`, R[t] > 0.1, `min pairwise envelope diff ${f(R[t])} (> 0.1)`);
+  const a = await cdp("Runtime.evaluate", { expression: AMBIENCE_PAGE, awaitPromise: true, returnByValue: true }, sessionId);
+  if (a.exceptionDetails) throw new Error(a.exceptionDetails.exception?.description ?? a.exceptionDetails.text);
+  const A = JSON.parse(a.result.value);
+  const amb = Object.entries(A.amb), loudest = Math.max(...amb.map(([, x]) => x.rms));
+  for (const [name, x] of amb) console.log(`     ambience ${name.padEnd(18)} peak ${f(x.peak)}  rms ${(20 * Math.log10(x.rms / loudest)).toFixed(1)} dB vs loudest`);
+  check("every ambience layer is audible and below clipping", amb.every(([, x]) => x.peak <= 1 && x.rms > 0.0005), `${amb.length} layers, max peak ${f(Math.max(...amb.map(([, x]) => x.peak)))}, min rms ${f(Math.min(...amb.map(([, x]) => x.rms)))}`);
+  check("four ambience layers play together without clipping", A.layers.count === 4 && A.layers.peak <= 1, JSON.stringify(A.layers));
+  check("rain material change glides without a gap", A.glide > 0.4, `lowest 100ms level during the change ${f(A.glide)} of the level before`);
 } catch (e) {
   console.error("ERROR", e);
   results.push(false);
