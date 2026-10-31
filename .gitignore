@@ -1,0 +1,64 @@
+# dependencies, build output, WXT generated types
+node_modules
+.output
+.wxt
+*.zip
+
+# test output
+coverage/
+test-results/
+playwright-report/
+
+# ---------------------------------------------------------------
+# LLM chat logs and agent artifacts — never commit these.
+# .githooks/pre-commit blocks them even when force-added.
+# ---------------------------------------------------------------
+# Claude Code (settings, launch.json, plans, local memory)
+.claude/
+CLAUDE.local.md
+.mcp.json
+# Cursor / Windsurf / Cline / Roo / Continue / Kiro / Zed
+.cursor/
+.cursorrules
+.windsurf/
+.windsurfrules
+.cline/
+.clinerules
+.roo/
+.continue/
+.kiro/
+.zed/
+# Codex / Gemini / Copilot / Aider / OpenHands / Serena
+.codex/
+.gemini/
+.github/copilot-instructions.local.md
+.aider*
+.openhands/
+.serena/
+# chat history exporters and transcript dumps
+.specstory/
+.history/
+*.jsonl
+/transcript*
+*.transcript.*
+chat-*.md
+# agent scratch, worktrees, workflow runs
+.scratch/
+scratchpad/
+.worktrees/
+worktrees/
+.superpowers/
+.agent/
+.agents/
+.ai/
+.llm/
+
+# local tooling, secrets and OS files
+.env*
+!.env.example
+*.log
+*.pem
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/

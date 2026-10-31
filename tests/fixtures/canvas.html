@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>빗속의 편지 — 이미지 뷰어</title>
+    <link rel="stylesheet" href="demo.css" />
+  </head>
+  <body>
+    <nav class="demo-nav"><a href="scroll.html">스크롤</a> · <a href="paged.html">페이지</a> · <a href="canvas.html">이미지(화면 모드)</a></nav>
+    <main id="viewer"></main>
+    <script src="story.js"></script>
+    <script>
+      // Like platforms that ship the text as images: the story is painted into canvases, so the DOM has no text.
+      // TWICE reads every viewer through capture → OCR.
+      // ?layout=kakao mimics the platform viewer: no blank lines, paragraphs only slightly apart, long canvases.
+      const KAKAO = new URLSearchParams(location.search).get("layout") === "kakao";
+      const W = 640, PAD = 28, SIZE = 20, LINE = KAKAO ? 32 : 36, GAP = KAKAO ? 20 : LINE, PER = KAKAO ? 11 : 5;
+      const dpr = devicePixelRatio || 1;
+      function wrap(g, text, width) {
+        const lines = [];
+        let line = "";
+        for (const word of text.split(" ")) {
+          const next = line ? line + " " + word : word;
+          if (g.measureText(next).width > width && line) {
+            lines.push(line);
+            line = word;
+          } else line = next;
+        }
+        return [...lines, line];
+      }
+      const probe = document.createElement("canvas").getContext("2d");
+      const font = `${SIZE}px "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif`;
+      probe.font = font;
+      const blocks = [STORY.title, ...STORY.paragraphs].map((t) => wrap(probe, t, W - PAD * 2));
+      // a few tall "pages" like a long-strip viewer, several paragraphs each
+      for (let i = 0; i < blocks.length; i += PER) {
+        const group = blocks.slice(i, i + PER);
+        const h = PAD + group.reduce((n, b) => n + b.length * LINE + GAP, 0);
+        const c = document.createElement("canvas");
+        c.width = W * dpr;
+        c.height = h * dpr;
+        c.style.width = W + "px";
+        c.style.height = h + "px";
+        const g = c.getContext("2d");
+        g.scale(dpr, dpr);
+        g.fillStyle = "#fbfaf7";
+        g.fillRect(0, 0, W, h);
+        g.fillStyle = "#222";
+        g.font = font;
+        let y = PAD + SIZE;
+        for (const b of group) {
+          b.forEach((line, j) => {
+            g.fillText(line, PAD + (KAKAO && j === 0 ? SIZE : 0), y);
+            y += LINE;
+          });
+          y += GAP;
+        }
+        document.getElementById("viewer").append(c);
+      }
+    </script>
+  </body>
+</html>

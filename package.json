@@ -1,0 +1,24 @@
+{
+  "name": "twice",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "TWICE — live music, ambience and sound effects for the web novel you are reading, scored by on-device AI",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prepare": "git config core.hooksPath .githooks",
+    "postinstall": "wxt prepare",
+    "test:e2e": "node scripts/e2e.mjs",
+    "test:audio": "node scripts/audio-check.mjs",
+    "check": "pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5",
+    "wxt": "^0.21.5"
+  }
+}

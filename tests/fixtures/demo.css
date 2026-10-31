@@ -1,0 +1,52 @@
+body {
+  margin: 0;
+  background: #f5f3ee;
+  color: #2a2c31;
+  font: 18px/1.9 "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+}
+main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px 40vh;
+}
+h1 {
+  font-size: 24px;
+}
+p {
+  margin: 0 0 1.4em;
+}
+.end {
+  text-align: center;
+  color: #6b6864;
+}
+.demo-nav {
+  position: sticky;
+  top: 0;
+  padding: 6px 16px;
+  font: 12px ui-monospace, monospace;
+  background: #f5f3eeee;
+  border-bottom: 1px solid #e1ded6;
+}
+.paged main {
+  height: calc(100vh - 40px);
+  overflow: hidden;
+  padding-bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+.paged article {
+  flex: 1;
+}
+.pager {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0 16px;
+}
+#viewer canvas {
+  display: block;
+  max-width: 100%;
+  height: auto !important;
+}
+#viewer {
+  padding-bottom: 50vh;
+}

@@ -1,0 +1,11 @@
+#!/bin/sh
+# Refuse LLM chat logs and agent artifacts even if someone ran `git add -f`.
+# Enabled by `pnpm install` (prepare script sets core.hooksPath).
+blocked=$(git diff --cached --name-only --diff-filter=ACMR | grep -E \
+  '(^|/)(\.claude|\.cursor|\.windsurf|\.cline|\.roo|\.continue|\.kiro|\.codex|\.gemini|\.openhands|\.serena|\.specstory|\.history|\.aider[^/]*|\.scratch|scratchpad|\.worktrees|worktrees|\.superpowers|\.agents?|\.ai|\.llm)(/|$)|(^|/)(CLAUDE\.local\.md|\.mcp\.json|\.cursorrules|\.windsurfrules|\.clinerules)$|\.jsonl$|^transcript|\.transcript\.|(^|/)chat-[^/]*\.md$|(^|/)\.env($|\.)' \
+  | grep -v '^\.env\.example$')
+if [ -n "$blocked" ]; then
+  echo "pre-commit: agent/LLM artifacts staged — unstage them:" >&2
+  echo "$blocked" | sed 's/^/  /' >&2
+  exit 1
+fi

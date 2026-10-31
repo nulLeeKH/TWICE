@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>빗속의 편지 — 스크롤</title>
+    <link rel="stylesheet" href="demo.css" />
+  </head>
+  <body>
+    <nav class="demo-nav"><a href="scroll.html">스크롤</a> · <a href="paged.html">페이지</a> · <a href="canvas.html">이미지(화면 모드)</a></nav>
+    <main>
+      <h1 id="title"></h1>
+      <article id="body"></article>
+      <p class="end">— 끝 —</p>
+      <section id="comments" style="min-height:120vh;padding:40px 0">
+        <h2>베스트 댓글</h2>
+        <p>독자 리뷰: 비 오는 장면이 정말 무섭네요. 똑똑 문을 두드리는 소리에 놀랐어요.</p>
+        <p>3분 전</p><p>좋아요 25</p><p>답글 3</p>
+        <p>독자 리뷰: 다음 이야기도 기다리고 있습니다.</p>
+      </section>
+    </main>
+    <script src="story.js"></script>
+    <script>
+      document.getElementById("title").textContent = STORY.title;
+      for (const t of STORY.paragraphs) document.getElementById("body").append(Object.assign(document.createElement("p"), { textContent: t }));
+    </script>
+  </body>
+</html>

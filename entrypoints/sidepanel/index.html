@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko" data-ui-loading>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>TWICE</title>
+    <link rel="stylesheet" href="../../src/style.css" />
+  </head>
+  <body>
+    <header class="header">
+      <a class="brand" href="#" aria-label="TWICE 홈"><span class="wave" aria-hidden="true">≈</span><span>TWICE</span></a>
+      <div class="controls">
+        <span class="chip" id="mode-chip">ON-DEVICE</span>
+        <button class="icon-btn" id="gear" aria-label="설정 열기" aria-expanded="false" aria-controls="settings"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m10 3-.7 2-2 .9-2-.4-2 3.5 1.4 1.6v2.8L3.3 15l2 3.5 2-.4 2 .9.7 2h4l.7-2 2-.9 2 .4 2-3.5-1.4-1.6v-2.8L20.7 9l-2-3.5-2 .4-2-.9-.7-2Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
+    </header>
+
+    <section id="settings" class="settings card" aria-labelledby="settings-title" hidden>
+      <div class="row between"><h2 id="settings-title">설정</h2><button class="icon-btn" id="close-settings" aria-label="설정 닫기">×</button></div>
+      <label class="language-setting" for="ui-language"><span>표시 언어</span><select id="ui-language"><option value="ko">한국어</option><option value="en">English</option></select></label>
+      <div class="language-setting"><span id="provider-label">분석 모델</span>
+        <div class="segmented" role="radiogroup" aria-labelledby="provider-label">
+          <button class="seg" id="use-nano" role="radio" aria-checked="true">기기 안 AI</button><button class="seg" id="use-external" role="radio" aria-checked="false">외부 API</button>
+        </div>
+      </div>
+      <div class="external-fields" id="external-fields" hidden>
+        <label class="language-setting"><span>Base URL</span><input id="external-url" type="url" placeholder="https://api.openai.com/v1" spellcheck="false" /></label>
+        <label class="language-setting"><span>API 키</span><input id="external-key" type="password" autocomplete="off" /></label>
+        <button class="btn primary" id="connect-api">연결하고 모델 불러오기</button>
+        <label class="language-setting"><span>모델</span><input id="external-model" type="text" list="external-models" placeholder="목록에서 선택" spellcheck="false" /></label>
+        <datalist id="external-models"></datalist>
+        <p class="small muted">외부 API를 쓰면 읽는 화면의 본문이 이 서버로 전송됩니다.</p>
+      </div>
+      <p class="small muted" id="model-note" role="status"></p>
+      <button class="btn quiet" id="stop">연결 종료</button>
+    </section>
+
+    <section class="model-card card" id="model-card" aria-labelledby="model-title">
+      <div class="row between"><div class="caption">ON-DEVICE AI</div><span class="model-dot" id="model-dot" aria-hidden="true"></span></div>
+      <h1 id="model-title">AI 확인 중</h1>
+      <p class="muted small" id="model-detail">모델 상태를 확인합니다.</p>
+      <div class="progress" id="model-progress" role="progressbar" aria-label="모델 다운로드 진행률" aria-valuemin="0" aria-valuemax="100" hidden><div></div></div>
+      <div class="row model-actions"><button class="btn primary" id="prepare-model" disabled>준비</button><button class="btn" id="recheck-model">확인</button><button class="btn quiet" id="cancel-model" hidden>취소</button><button class="btn" id="switch-external" hidden>외부 API로 전환</button></div>
+      <details id="device-help" class="help"><summary>AI 설정 안내</summary><p>데스크톱 Chrome의 온디바이스 AI가 필요합니다.</p><div class="code-row"><code>chrome://on-device-internals</code><button class="btn tiny" id="copy-device">복사</button></div></details>
+    </section>
+
+    <div class="alert" id="alert" role="alert" hidden>
+      <p id="alert-text"></p>
+      <div class="row"><button class="btn tiny" id="alert-retry">다시 시도</button><button class="btn tiny" id="alert-settings">설정 열기</button></div>
+    </div>
+
+    <main class="live" id="live">
+      <div class="col">
+        <section class="card site" aria-labelledby="site-title">
+          <div class="row between"><div class="caption" id="site-mode">현재 페이지</div><span class="connection-dot" id="connection-dot" aria-hidden="true"></span></div>
+          <h2 class="site-title" id="site-title">소설 탭을 열어주세요</h2>
+          <p class="status" id="status" role="status" aria-live="polite">소설 탭을 연결해 주세요.</p>
+          <button class="btn primary" id="start" disabled>시작</button>
+        </section>
+
+        <section class="card volume-section" aria-labelledby="volume-heading"><h2 class="caption" id="volume-heading">볼륨</h2>
+          <label class="slider"><span>음악</span><input type="range" min="0" max="100" value="80" data-bus="music" aria-label="음악 볼륨" /><output>80</output><button class="mute" type="button" data-mute="music" aria-pressed="false" aria-label="음악 음소거"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="on" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/><path class="off" d="m16 9 6 6m0-6-6 6"/></svg></button></label>
+          <label class="slider"><span>배경음</span><input type="range" min="0" max="100" value="40" data-bus="ambience" aria-label="배경음 볼륨" /><output>40</output><button class="mute" type="button" data-mute="ambience" aria-pressed="false" aria-label="배경음 음소거"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="on" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/><path class="off" d="m16 9 6 6m0-6-6 6"/></svg></button></label>
+          <label class="slider"><span>효과음</span><input type="range" min="0" max="100" value="65" data-bus="sfx" aria-label="효과음 볼륨" /><output>65</output><button class="mute" type="button" data-mute="sfx" aria-pressed="false" aria-label="효과음 음소거"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="on" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/><path class="off" d="m16 9 6 6m0-6-6 6"/></svg></button></label>
+          <label class="slider master"><span>전체</span><input type="range" min="0" max="100" value="80" data-bus="master" aria-label="전체 볼륨" /><output>80</output><button class="mute" type="button" data-mute="master" aria-pressed="false" aria-label="전체 음소거"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="on" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/><path class="off" d="m16 9 6 6m0-6-6 6"/></svg></button></label>
+        </section>
+
+        <section class="card scene" id="scene-card" aria-label="분위기 시각화">
+          <canvas class="aura-canvas" id="aura-canvas" width="320" height="128" aria-hidden="true"></canvas>
+          <div class="scene-overlay">
+            <h2 class="mood" id="mood">대기 중</h2>
+            <span class="muted small" id="position"></span>
+            <p class="scene-caption" id="caption"></p>
+          </div>
+        </section>
+      </div>
+
+      <div class="col">
+        <section class="card" aria-labelledby="music-heading">
+          <div class="caption" id="music-heading">음악</div>
+          <div class="row between wrap"><strong id="instrument">대기 중</strong><span class="muted small" id="pattern"></span></div>
+          <div id="meters"></div>
+          <p class="muted small" id="music-status">대기 중</p>
+        </section>
+
+        <section class="layer-section" aria-labelledby="layers-heading"><h2 class="caption" id="layers-heading">배경음</h2><div id="layers"><div class="empty-layer">배경음 없음</div></div></section>
+        <div class="sfx" id="sfx"><span class="bar" aria-hidden="true"></span><span><span class="caption accent">효과음</span><br /><span id="sfx-label" aria-live="polite">효과음 없음</span></span></div>
+      </div>
+    </main>
+
+    <details class="debug" id="debug"><summary>진단</summary><div class="debug-actions"><button class="btn tiny" id="copy-debug">JSON 복사</button></div><div class="decision-grid" id="decision-summary"></div><canvas id="preview" hidden></canvas><pre id="debug-output"></pre></details>
+    <script type="module" src="../../src/main.ts"></script>
+  </body>
+</html>

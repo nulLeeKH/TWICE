@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>빗속의 편지 — 페이지</title>
+    <link rel="stylesheet" href="demo.css" />
+  </head>
+  <body class="paged">
+    <nav class="demo-nav"><a href="scroll.html">스크롤</a> · <a href="paged.html">페이지</a> · <a href="canvas.html">이미지(화면 모드)</a></nav>
+    <main>
+      <article id="body"></article>
+      <div class="pager"><button id="prev">← 이전</button><span id="no"></span><button id="next">다음 →</button></div>
+    </main>
+    <script src="story.js"></script>
+    <script>
+      const PER = 4;
+      const pages = Math.ceil(STORY.paragraphs.length / PER);
+      let n = 0;
+      function show() {
+        const body = document.getElementById("body");
+        body.replaceChildren(...STORY.paragraphs.slice(n * PER, n * PER + PER).map((t) => Object.assign(document.createElement("p"), { textContent: t })));
+        document.getElementById("no").textContent = `${n + 1} / ${pages}`;
+      }
+      const go = (d) => {
+        n = Math.min(pages - 1, Math.max(0, n + d));
+        show();
+      };
+      document.getElementById("prev").onclick = () => go(-1);
+      document.getElementById("next").onclick = () => go(1);
+      addEventListener("keydown", (e) => (e.key === "ArrowRight" ? go(1) : e.key === "ArrowLeft" ? go(-1) : 0));
+      show();
+    </script>
+  </body>
+</html>
