@@ -6,13 +6,15 @@
 
 ## 시작하기
 
+[Releases](https://github.com/nulLeeKH/TWICE/releases)에서 `twice-<버전>-chrome.zip`을 받거나, 직접 빌드합니다.
+
 ```bash
 pnpm install --frozen-lockfile
-pnpm build
-pnpm zip   # 드래그 앤 드롭으로 설치할 때
+pnpm build   # .output/chrome-mv3 폴더
+pnpm zip     # .output/twice-<버전>-chrome.zip (드래그 앤 드롭 설치용)
 ```
 
-1. Chrome `chrome://extensions`에서 **개발자 모드**를 켜고 **Load unpacked**를 눌러 `.output/chrome-mv3` 폴더를 로드하거나, `.output/` 경로의 zip 패키지 파일을 끌어놓아 설치합니다.
+1. Chrome `chrome://extensions`에서 **개발자 모드**를 켜고, **Load unpacked**로 `.output/chrome-mv3` 폴더를 로드하거나 zip 파일을 페이지에 끌어놓아 설치합니다.
 2. 웹 소설 탭에서 툴바의 **TWICE** 아이콘을 눌러 사이드 패널을 엽니다.
 3. 모델이 준비되지 않았다면 **준비**를 눌러 Gemini Nano를 준비하거나, 외부 LLM을 사용할 예정이라면 설정에 진입해 OpenAI 호환 API를 설정합니다.
 4. **시작**을 눌러 현재 탭에 대해 분석을 시작합니다. 같은 버튼으로 멈춤·재개합니다.
@@ -85,8 +87,31 @@ pnpm zip         # 배포용 zip 생성
 | 검사 | 범위 | 최근 결과 |
 |---|---|---|
 | `pnpm check` | 모델 수명·외부 API·전환 규칙·작곡·병합·i18n·런타임 단위 테스트, 타입, 빌드 | 51/51 |
-| `pnpm test:audio` | 분위기 16종 출력, 전환 크로스페이드 무음 없음, 마디 끝 무음 없음, 클리핑, 덕킹·일시정지, 메인 스레드 정지 중 재생 | 26/26 |
+| `pnpm test:audio` | 분위기 16종 출력, 전환 크로스페이드 무음 없음, 마디 끝 무음 없음, 클리핑, 덕킹·일시정지, 메인 스레드 정지 중 재생, 효과음 47종 음량·피크 리포트 | 27/27 |
 | `pnpm test:e2e` | 모델 없음·다운로드 흐름, 실제 OCR, 음악→배경 순서, 큐 병합, 탭·회차·이탈, 댓글 구간 진입·복귀, 실패 경고·재시도, 음소거, 한/영 UI | 44/44 |
+
+## 개발 프로세스
+
+버전은 [SemVer](https://semver.org/lang/ko/)를 따르고, `main`에 머지된 버전만 릴리즈합니다.
+
+1. `main`에서 작업 브랜치를 만듭니다 (`feat/…`, `fix/…`).
+2. 개발하고 `pnpm check`, `pnpm test:audio`, `pnpm test:e2e`를 통과시킵니다.
+3. PR을 올리기 전에 버전을 올려 같은 브랜치에 커밋합니다.
+   ```bash
+   pnpm version patch --no-git-tag-version   # 또는 minor / major
+   git commit -am "chore: release vX.Y.Z"
+   ```
+4. PR을 열고 리뷰 후 `main`에 머지합니다.
+5. 머지된 `main`에서 태그를 달고 빌드 결과를 GitHub 릴리즈로 등록합니다.
+   ```bash
+   git switch main && git pull
+   pnpm install --frozen-lockfile && pnpm zip
+   (cd .output && shasum -a 256 twice-X.Y.Z-chrome.zip > SHA256SUMS)
+   git tag -a vX.Y.Z -m "TWICE vX.Y.Z" && git push origin vX.Y.Z
+   gh release create vX.Y.Z .output/twice-X.Y.Z-chrome.zip .output/SHA256SUMS --title "TWICE vX.Y.Z" --generate-notes
+   ```
+
+빌드 결과물(zip)은 저장소에 커밋하지 않고 GitHub 릴리즈 자산으로만 보관합니다.
 
 ## 알려진 한계
 
