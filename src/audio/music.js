@@ -1,6 +1,7 @@
 // Music: a mood preset becomes a composed 16- or 32-bar piece (chords, melody, arrangement); the sequencer plays
 // pieces back to back and crossfades between moods at a bar line. No browser globals at module scope.
 import { MOODS } from "../domain/score.js";
+import { acousticVoices } from "./acoustic.js";
 
 const hz = (midi) => 440 * 2 ** ((midi - 69) / 12);
 
@@ -106,6 +107,17 @@ const INSTRUMENT_VOICES = {
     body.connect(f);
     f.connect(g).connect(out);
   },
+  /** Soft mallet percussion: tuned wooden bars, no noise or metallic transient. */
+  marimba(ctx, out, t, n, dur, v) {
+    const len = Math.min(dur + 0.5, 1.8);
+    const g = env(ctx, t, 0.15 * v, 0.009, len);
+    const filter = lp(ctx, 1550, 0.6);
+    osc(ctx, "sine", hz(n), t, t + len).connect(filter);
+    const overtone = ctx.createGain();
+    overtone.gain.value = 0.18;
+    osc(ctx, "sine", hz(n) * 3, t, t + len).connect(overtone).connect(filter);
+    filter.connect(g).connect(out);
+  },
   harp(ctx, out, t, n, dur, v) {
     const len = 1.55;
     const g = env(ctx, t, 0.19 * v, 0.002, len);
@@ -164,7 +176,61 @@ const INSTRUMENT_VOICES = {
     f.connect(g).connect(out);
   },
 };
+// Substitute locally rendered acoustic-inspired instruments without touching the cue/scene contracts.
+Object.assign(INSTRUMENT_VOICES, acousticVoices);
 export const INSTRUMENTS = Object.keys(INSTRUMENT_VOICES);
+
+// Diegetic events are represented by short MUSICAL ACCENTS, never sampled noises,
+// voices, physical Foley or looping sound effects. The original event names remain
+// compatible with the model schema, storage, and existing diagnostics.
+const CUE_GROUPS = {
+  delicate: ["door_creak", "footsteps", "clock_ticks", "knock", "glass_clink", "coin_drop", "page_turn", "sigh", "gasp", "keyboard", "camera_shutter"],
+  bright: ["phone_ring", "bell", "crowd_cheer", "car_horn", "train_horn", "evil_laugh"],
+  impact: ["door_slam", "impact_wood", "impact_metal", "glass_shatter", "chopping", "slap_punch", "body_fall", "chain_rattle", "sword_clash", "blade_draw", "arrow_shot"],
+  danger: ["gunshot", "explosion", "collapse", "car_crash", "tire_screech", "siren", "thunder", "scream", "dog_bark", "low_rumble"],
+  atmospheric: ["sizzle", "whoosh", "water_splash", "crow_caw", "airplane", "flame_burst", "heartbeat_thump", "sub_drop"],
+  magical: ["magic_blast"],
+};
+const CUE_GROUP_OF = Object.fromEntries(Object.entries(CUE_GROUPS).flatMap(([group, names]) => names.map(name => [name, group])));
+const CUE_INSTRUMENTS = {
+  delicate: ["harp", "piano", "marimba"],
+  bright: ["marimba", "harp", "piano"],
+  impact: ["piano", "cello", "marimba"],
+  danger: ["cello", "strings", "marimba"],
+  atmospheric: ["marimba", "strings", "harp"],
+  magical: ["marimba", "harp", "piano"],
+};
+
+/** Pure plan: each cue is a brief (<= 1.5 seconds) non-looping instrument flourish.
+ * Each accent is unique and non-looping (the scene runtime enforces >=8s between events).
+ * Global minimum spacing is enforced separately by ReaderRuntime.
+ */
+export function instrumentCuePlan(type, strength = 0.7, rnd = Math.random) {
+  if (type === "sudden_silence") return [];
+  const group = CUE_GROUP_OF[type];
+  if (!group) return [];
+  const voices = CUE_INSTRUMENTS[group];
+  const instrument = voices[Math.floor(rnd() * voices.length) % voices.length];
+  const root = group === "danger" ? 43 : group === "impact" ? 52 : group === "magical" ? 76 : 64;
+  const shift = Math.floor(rnd() * 7) - 3;
+  const notes = group === "danger" ? [0, 3, 7] : group === "impact" ? [0, -5, -8] :
+    group === "bright" ? [0, 4, 7] : group === "magical" ? [0, 7, 12] : [0, 2, 7];
+  const count = 1 + Math.floor(rnd() * (group === "delicate" ? 2 : 3));
+  const step = 0.14 + rnd() * 0.18;
+  const level = Math.max(0.15, Math.min(1, strength));
+  return Array.from({ length: count }, (_, i) => ({
+    instrument, note: root + shift + notes[i], offset: i * step,
+    duration: 0.12 + rnd() * 0.2, velocity: (0.5 + rnd() * 0.3) * level * (1 - i * 0.16),
+  }));
+}
+
+/** Use only the same instrument voice synthesizers as the score. */
+export function playInstrumentCue(ctx, out, at, type, strength = 0.7, rnd = Math.random) {
+  const notes = instrumentCuePlan(type, strength, rnd);
+  for (const note of notes) INSTRUMENT_VOICES[note.instrument](ctx, out, at + note.offset, note.note, note.duration, note.velocity);
+  return notes.length;
+}
+
 
 // ---- composition ----
 
@@ -200,25 +266,50 @@ function ladder(key, scale, register) {
   return out;
 }
 
-/** One phrase of melody over four chords: chord tones on strong beats, steps between, an arc up then down. */
-function melodyPhrase(rnd, rhythm, chords, key, notes, from) {
-  let at = notes.indexOf(from);
-  if (at < 0) at = notes.length >> 1;
+/** A memorable seed for each section. Reuse with development so A actually sounds like A. */
+function makeTheme(rnd) {
+  return {
+    contour: [0, rnd() < 0.5 ? 1 : 2, rnd() < 0.6 ? -1 : 1, rnd() < 0.5 ? 2 : -2, 0],
+    answer: [0, -1, 1, rnd() < 0.5 ? -2 : 2, 0],
+  };
+}
+
+function nearestTone(notes, chord, key, around, preferTonic = false) {
+  const pcs = new Set((preferTonic ? [chord[0]] : chord).map(c => ((c % 12) + 12) % 12));
+  // chord degrees are relative to key; chord[0] in these calls has not yet been transposed.
+  const want = notes.map((n, i) => ({ i, pc: ((n - key) % 12 + 12) % 12 }))
+    .filter(({pc}) => pcs.has(pc));
+  if (!want.length) return Math.max(0, Math.min(notes.length - 1, around));
+  return want.reduce((best, cur) => Math.abs(cur.i - around) < Math.abs(best.i - around) ? cur : best).i;
+}
+
+/** Four-bar question and answer: phrase shapes repeat, while pitch and timing develop gently. */
+function melodyPhrase(rnd, rhythm, chords, key, notes, from, theme, variation, mood) {
+  let index = notes.indexOf(from);
+  if (index < 0) index = notes.length >> 1;
+  const quiet = ["sad", "tragic", "dark", "mystery", "horror", "calm", "romance"].includes(mood);
   return chords.map((chord, bar) => {
-    const tones = new Set(chord.map((c) => (((c % 12) + 12) % 12)));
-    const isTone = (n) => tones.has((((n - key) % 12) + 12) % 12);
-    const dir = bar < 2 ? 1 : -1;
-    return rhythm.map(([beat, len], i) => {
-      const last = bar === 3 && i === rhythm.length - 1;
-      if (beat % 1 === 0 && (beat % 2 === 0 || last)) {
-        // nearest chord tone in the direction of the arc
-        const target = at + dir * (rnd() < 0.7 ? 1 : 2);
-        let best = at, gap = Infinity;
-        notes.forEach((n, j) => { if (isTone(n) && Math.abs(j - target) < gap) { gap = Math.abs(j - target); best = j; } });
-        at = best;
-      } else at = Math.max(0, Math.min(notes.length - 1, at + (rnd() < 0.8 ? dir : -dir)));
-      return { beat, len: last ? 4 - beat : len, note: notes[at] };
+    const contour = bar % 2 === 0 ? theme.contour : theme.answer;
+    // Answer the motif with a slightly sparser cadence; preserve some recognizable rhythms.
+    let pattern = rhythm.map(([beat, len]) => ({beat, len}));
+    if (bar === 3) pattern = quiet ? [{beat:0,len:2}, {beat:2,len:2}] : [{beat:0,len:1.5}, {beat:1.5,len:.5}, {beat:2,len:2}];
+    if (quiet && bar === 1 && pattern.length > 2) pattern = pattern.filter((e, i) => i !== 1);
+    // Don't hit every beat: phrases breathe, especially when the story is reflective.
+    if (bar === 2 && pattern.length > 3 && rnd() < .65) pattern = pattern.filter((e, i) => i !== 1);
+    const target = Math.max(0, Math.min(notes.length - 1, index + [1, -1, 2, -1][bar]));
+    const output = pattern.map(({beat,len}, i) => {
+      const last = bar === 3 && i === pattern.length - 1;
+      const start = beat === 0;
+      if (start) index = nearestTone(notes, chord, key, target + (variation ? 1 : 0));
+      else if (last) index = nearestTone(notes, chord, key, index, true);
+      else index = Math.max(0, Math.min(notes.length - 1, index + contour[i % contour.length] + (variation && i === 1 ? -1 : 0)));
+      if (!start && !last && beat === Math.floor(beat) && rnd() < .35)
+        index = nearestTone(notes, chord, key, index);
+      const isPickup = !start && !last;
+      const strength = Math.max(.52, Math.min(1, (start ? .89 : isPickup ? .70 : .83) + (rnd() - .5) * .13));
+      return { beat, len: last ? 4 - beat : len * (quiet ? .94 : .91), note: notes[index], vel: strength };
     });
+    return output;
   });
 }
 
@@ -239,9 +330,12 @@ export function compose(mood, rnd = Math.random, prevKey = null, prevBpm = null)
   const notes = ladder(key, m.scale, m.register);
   const rhythms = RHYTHMS[RHYTHM_OF[m.style]];
   const motifs = { A: pickOf(rnd, rhythms), B: pickOf(rnd, rhythms) };
+  const themes = { A: makeTheme(rnd), B: makeTheme(rnd) };
   const bars = [];
   let from = notes[notes.length >> 1];
+  const occurrences = { A: 0, B: 0 };
   for (const [name, degrees] of form) {
+    const occurrence = occurrences[name]++;
     for (let p = 0; p < degrees.length; p += 4) {
       const chords = degrees.slice(p, p + 4).map((d, i) => {
         const c = triad(m.scale, d);
@@ -249,12 +343,45 @@ export function compose(mood, rnd = Math.random, prevKey = null, prevBpm = null)
         return c;
       });
       // the second phrase of a section answers the first with the same rhythm, occasionally a fresh one
-      const melody = melodyPhrase(rnd, rnd() < 0.8 ? motifs[name] : pickOf(rnd, rhythms), chords, key, notes, from);
+      const melody = melodyPhrase(rnd, motifs[name], chords, key, notes, from,
+        themes[name], occurrence > 0 || p > 0, mood);
       from = melody[3].at(-1)?.note ?? from;
-      chords.forEach((c, i) => bars.push({ chord: c.map((n) => n + key), melody: melody[i], section: name }));
+      chords.forEach((c, i) => bars.push({
+        chord: c.map((n) => n + key), melody: melody[i], section: name,
+        // Rising/falling four-bar arc: human-like phrasing, not one static velocity.
+        dynamics: ([.78, .92, 1.03, .73][i] * (name === "B" ? 1.06 : 1)),
+      }));
     }
   }
+  preventShortMelodyLoops(bars, bpm, notes);
   return { mood, key, bpm, bars };
+}
+
+/** Prevent an identical entire bar melody from repeating within eight seconds.
+ * Adjust a note to a nearby scale tone; never shorten the underlying 16/32-bar form.
+ */
+export function preventShortMelodyLoops(bars, bpm, scaleNotes) {
+  const secondsPerBar = 240 / bpm;
+  const signature = (bar) => bar.melody.map(({ beat, len, note }) => `${beat}:${len}:${note}`).join("|");
+  for (let i = 0; i < bars.length; i++) {
+    const current = bars[i];
+    if (!current?.melody?.length) continue;
+    const collides = () => {
+      for (let j = i - 1; j >= 0 && (i - j) * secondsPerBar < 8; j--)
+        if (signature(bars[j]) === signature(current)) return true;
+      return false;
+    };
+    if (!collides()) continue;
+    const first = current.melody[0];
+    const original = first.note;
+    // Prefer an alternate chord tone in the same register; otherwise a nearby scale note.
+    const pitches = scaleNotes.filter((n) => n !== original);
+    const chordPitches = pitches.filter((n) => current.chord.some((chord) => ((chord - n) % 12 + 12) % 12 === 0));
+    for (const n of [...chordPitches, ...pitches].sort((a, b) => Math.abs(a - original) - Math.abs(b - original))) {
+      first.note = n;
+      if (!collides()) break;
+    }
+  }
 }
 
 /** Places chord notes within an octave around `center` so successive chords move by small steps. */
@@ -285,7 +412,8 @@ export function accompany(role, chord, center, energy, rnd = Math.random) {
 export function arrangement(mood) {
   const m = MOODS[mood] ?? MOODS.calm;
   const all = [m.lead, ...m.support];
-  const bed = all.find((i) => PADS.has(i)) ?? "pad";
+  // The foundation is always bowed strings; synthetic pad voices are excluded.
+  const bed = m.lead === "strings" ? "cello" : "strings";
   const lead = all.find(melodic) ?? null;
   const role = (i) =>
     i === "pulse_bass" ? (m.style === "drive" ? "drive_bass" : "pulse")
@@ -296,16 +424,57 @@ export function arrangement(mood) {
   const parts = all.filter((i) => i !== bed && i !== lead).map((instrument) => ({ instrument, role: role(instrument) }));
   // a lone melody instrument also carries the accompaniment
   if (!parts.length && lead) parts.push({ instrument: lead, role: role(lead) });
-  return { bed, lead, parts };
+  // The percussion section is orchestral, and intentionally absent from reflective scenes.
+  const percussion = ({
+    battle: ["bass_drum", "frame_drum", "timpani"],
+    anger: ["frame_drum", "bass_drum"],
+    epic: ["timpani", "bass_drum"],
+    tension: ["timpani", "frame_drum"],
+    horror: ["timpani"],
+    adventure: ["frame_drum"],
+    growth: ["frame_drum"],
+  })[mood] ?? [];
+  return { bed, lead, parts, percussion };
+}
+
+/** Restrained orchestral percussion. 4/4 beats; no drum-machine beat or perpetual loop.
+ * Every note has a distinct musical function, and quiet passages omit the percussion entirely.
+ */
+export function percussionPattern(mood, intensity, barIndex) {
+  if (!Number.isFinite(intensity) || intensity < .40) return [];
+  const e = Math.max(0, Math.min(1, intensity));
+  const four = barIndex % 4;
+  const beat = (instrument, when, vel, note=48, len=.55) => ({
+    instrument, beat:when, note, len, vel:Math.min(.83, vel * (.55 + .45 * e)),
+  });
+  if (mood === 'epic') {
+    if (four === 0) return [beat('timpani', 0, .65, 47, 1.2), ...(e > .68 ? [beat('bass_drum', 0, .44)] : [])];
+    if (four === 3 && e > .62) return [beat('timpani', 3, .48, 50)];
+    return [];
+  }
+  if (mood === 'battle') {
+    if (barIndex % 2 && (e < .7 || four === 3)) return [];
+    return [beat('bass_drum', 0, .58), beat('frame_drum', 2, .35),
+      ...(e > .7 && four === 3 ? [beat('timpani', 3.5, .52, 50)] : [])];
+  }
+  if (mood === 'anger') return four % 2 === 0
+    ? [beat('frame_drum', 0, .39), ...(e > .72 ? [beat('bass_drum', 2.5, .3)] : [])] : [];
+  if (mood === 'tension') return e > .55 && four === 2
+    ? [beat('timpani', 0, .4, 45, .95)] : [];
+  if (mood === 'horror') return e > .75 && four === 3
+    ? [beat('timpani', 0, .35, 41, 1.2)] : [];
+  if (mood === 'adventure' || mood === 'growth') return e > .65 && four === 0
+    ? [beat('frame_drum', 0, .28)] : [];
+  return [];
 }
 
 // ---- playback ----
 
-const XFADE = 4; // seconds two pieces overlap when the mood changes
+const XFADE = 2.7; // gentle but responsive crossfade after the new screen is classified
 
 /**
  * Plays the scene's mood as consecutive composed pieces into `out`. setScene() with a new mood starts a fresh piece at
- * the next bar line and crossfades the old one out; the same mood only updates intensity, read bar by bar.
+ * within half a second and crossfades the old one out; the same mood only updates intensity, read bar by bar.
  * tick(horizon) is called by the engine's lookahead scheduler.
  */
 export function createSequencer(ctx, out) {
@@ -332,7 +501,11 @@ export function createSequencer(ctx, out) {
   function play(p, instrument, events, center, vel) {
     const fn = INSTRUMENT_VOICES[instrument], beat = 60 / p.piece.bpm;
     for (const e of events) {
-      const t = p.barTime + e.beat * beat;
+      // Small human timing deviations; no jitter when the note was scheduled too close to real time.
+      const intended = p.barTime + e.beat * beat;
+      const t = intended > ctx.currentTime + .07
+        ? Math.max(p.barTime + .003, intended + (Math.random() - .5) * .023)
+        : intended;
       voiceEnds = voiceEnds.filter((end) => end > t);
       if (voiceEnds.length >= 48) continue;
       voiceEnds.push(t + e.len * beat + 2);
@@ -341,7 +514,7 @@ export function createSequencer(ctx, out) {
   }
   function bar(p) {
     const { bars } = p.piece, m = MOODS[p.piece.mood], b = bars[p.bar], energy = scene?.intensity ?? 0.5;
-    const vel = Math.min(1, (0.45 + energy * 0.5) * (b.section === "B" ? 1.08 : 1));
+    const vel = Math.min(1, (0.45 + energy * 0.5) * (b.dynamics ?? 1));
     // the bed holds through a repeated chord and is re-voiced only when the harmony changes, kept under the lead
     const same = (x) => x?.chord.join() === b.chord.join();
     if (!same(bars[p.bar - 1])) {
@@ -353,8 +526,11 @@ export function createSequencer(ctx, out) {
       if (i > 0 && energy < 0.6) return; // the second accompaniment joins only when the scene is intense
       play(p, part.instrument, accompany(part.role, b.chord, m.register - 5, energy), m.register - 5, vel * 0.8);
     });
+    if (p.plan.percussion.length) for (const hit of percussionPattern(p.piece.mood, energy, p.bar)) {
+      play(p, hit.instrument, [{beat:hit.beat, note:hit.note, len:hit.len, vel:hit.vel}], hit.note, vel);
+    }
     // a quiet scene leaves every other bar of melody out
-    if (p.plan.lead && !(energy < 0.3 && p.bar % 2)) play(p, p.plan.lead, b.melody.map((e) => ({ ...e, vel: 0.6 })), m.register, vel);
+    if (p.plan.lead && !(energy < 0.3 && p.bar % 2)) play(p, p.plan.lead, b.melody.map((e) => ({ ...e, vel: .67 * (e.vel ?? 1) })), m.register, vel);
     p.barTime += 4 * 60 / p.piece.bpm;
     if (++p.bar >= bars.length) { p.piece = compose(p.piece.mood, Math.random, key, bpm); key = p.piece.key; bpm = p.piece.bpm; p.bar = 0; }
   }
@@ -366,8 +542,10 @@ export function createSequencer(ctx, out) {
       const cur = live();
       scene = s;
       if (cur?.piece.mood === s.mood) return;
-      const at = cur ? Math.max(cur.barTime, ctx.currentTime + 0.05) : ctx.currentTime + 0.1;
-      const fade = cur ? Math.max(XFADE, 4 * 60 / cur.piece.bpm) : 1.5;
+      // Do not wait several seconds for the next bar boundary after the mood decision.
+      // Existing notes fade out while the new score fades in, avoiding an abrupt cut.
+      const at = cur ? Math.max(ctx.currentTime + 0.08, Math.min(cur.barTime, ctx.currentTime + 0.5)) : ctx.currentTime + 0.1;
+      const fade = cur ? (["battle", "horror"].includes(s.mood) ? 1.7 : XFADE) : 1.2;
       if (cur) retire(cur, at, fade);
       players.push(start(s.mood, at, fade));
     },

@@ -30,7 +30,7 @@ const moodPalettes: Record<string, [[number, number, number], [number, number, n
 };
 const instruments: Record<string, string> = {
   piano: "피아노", rhodes: "로즈", music_box: "오르골", strings: "스트링", cello: "첼로",
-  harp: "하프", pulse_bass: "펄스 베이스", pad: "배경 화음", dark_pad: "어두운 화음",
+  harp: "하프", marimba: "마림바", timpani: "팀파니", bass_drum: "큰북", frame_drum: "프레임 드럼", pulse_bass: "펄스 베이스", pad: "배경 화음", dark_pad: "어두운 화음",
 };
 const effects: Record<string, string> = {
   door_creak: "문 삐걱임", door_slam: "문 쾅 닫힘", footsteps: "발걸음", clock_ticks: "시계 초침", knock: "노크",
@@ -137,6 +137,9 @@ export class AppView {
     if (state.away) status = state.message.includes("페이지 이동") ? state.message : "다른 탭 사용 중 · 일시정지";
     else if (state.userPaused) status = "일시정지됨";
     else if (state.analysisBusy && state.phase) status = state.phase;
+    else if (state.analysisMode === "chapter-planning") status = "전체 회차 사전 분석 중 · 음악은 계속 재생";
+    else if (state.analysisMode === "chapter-ready") status = "전체 회차 분석 완료 · 현재 위치 동기화";
+    else if (state.analysisMode === "chapter-fallback") status = "사전 분석 불가 · 화면 OCR로 재생";
     if ($("status").textContent !== t(status)) $("status").textContent = t(status);
     $("status").className = `status ${state.status === "error" ? "error" : state.analysisBusy || state.status === "connecting" ? "busy" : ""}`;
     $("position").textContent = t(state.position);
@@ -181,7 +184,7 @@ export class AppView {
       card.style.setProperty("--mood-secondary", `rgb(${s[0]}, ${s[1]}, ${s[2]})`);
     }
     const plan = scene ? arrangement(scene.mood) : null, piece = this.runtime.audio?.piece;
-    $("instrument").textContent = plan ? [plan.lead, ...plan.parts.map(part => part.instrument), plan.bed].filter((name, i, all) => name && all.indexOf(name) === i).map(name => t(instruments[name!] ?? name!)).join(" · ") : t("대기 중");
+    $("instrument").textContent = plan ? [plan.lead, ...plan.parts.map(part => part.instrument), ...(plan.percussion ?? []), plan.bed].filter((name, i, all) => name && all.indexOf(name) === i).map(name => t(instruments[name!] ?? name!)).join(" · ") : t("대기 중");
     $("pattern").textContent = piece ? `${piece.bpm} BPM · ${piece.bars.length}${t("마디")}` : "";
     const meters = $("meters"); meters.replaceChildren();
     meters.append(meter("강도", (scene?.intensity ?? 0) * 100, scene ? `${Math.round(scene.intensity * 100)}` : "—"));

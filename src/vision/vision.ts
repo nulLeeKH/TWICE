@@ -8,7 +8,7 @@ interface OcrWorker {
 }
 interface OcrModule { createWorker(language: string, engine: number, options: Record<string, unknown>): Promise<OcrWorker> }
 export interface Snapshot { canvas: OffscreenCanvas; fingerprint: string; scale: number }
-export interface OcrResult { paragraphs: { text: string; y: number }[]; nonStory: boolean; stats: { lines: number; filtered: number; ms: number } }
+export interface OcrResult { paragraphs: { text: string; y: number }[]; lines?: { text: string; y: number }[]; nonStory: boolean; stats: { lines: number; filtered: number; ms: number } }
 const asset = (path: string) => browser.runtime.getURL(path as Parameters<typeof browser.runtime.getURL>[0]);
 export class Vision {
   private worker: Promise<OcrWorker> | null = null;
@@ -49,6 +49,7 @@ export class Vision {
     const paragraphs = linesToParagraphs(filtered.lines, snapshot.canvas.height, snapshot.canvas.width) as { text: string; y0: number }[];
     return {
       paragraphs: paragraphs.map(p => ({ text: p.text, y: shot.top + p.y0 / snapshot.scale })),
+      lines: filtered.lines.map(line => ({ text: line.text.trim(), y: shot.top + line.bbox.y0 / snapshot.scale })),
       nonStory: !paragraphs.length && (filtered.cutoff !== null || filtered.removed > 0),
       stats: { lines: lines.length, filtered: lines.length - filtered.lines.length, ms: performance.now() - started },
     };
