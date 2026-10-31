@@ -1,5 +1,6 @@
 /** Korean source copy is the stable key. Raw story/model text is never passed through this catalogue. */
 export const messages: Record<string, string> = {
+  "오픈소스 라이선스": "Open-source licenses",
   // Header & Settings
   "TWICE 홈": "TWICE home",
   "설정 열기": "Open settings",

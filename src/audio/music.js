@@ -224,7 +224,8 @@ function melodyPhrase(rnd, rhythm, chords, key, notes, from) {
 
 /**
  * Composes one piece for `mood`. The key and tempo stay close to the previous piece so a change of piece glides.
- * Returns { mood, key, bpm, bars: [{ chord (absolute MIDI triad), melody: [{beat, len, note}], section }] }. * @param {string} mood @param {() => number} [rnd] @param {number | null} [prevKey] @param {number | null} [prevBpm]
+ * Returns { mood, key, bpm, bars: [{ chord (absolute MIDI triad), melody: [{beat, len, note}], section }] }.
+ * @param {string} mood @param {() => number} [rnd] @param {number | null} [prevKey] @param {number | null} [prevBpm]
  */
 export function compose(mood, rnd = Math.random, prevKey = null, prevBpm = null) {
   const m = MOODS[mood] ?? MOODS.calm;
