@@ -44,12 +44,12 @@ describe("reader ownership and transport", () => {
     harness.browser.permissions.request.mockResolvedValue(false); await runtime.connect();
     expect(runtime.connected).toBe(false); expect(runtime.state.message).toContain("권한"); expect(harness.engines[0]!.close).toHaveBeenCalledTimes(1);
   });
-  it("model preparation failure keeps non-blocking provisional audio with a visible warning", async () => {
+  it("model preparation failure stays silent with a visible warning", async () => {
     model.prepare.mockRejectedValue(new Error("모델이 없습니다")); await runtime.connect();
     await vi.waitFor(() => expect(runtime.state.alert).toContain("모델이 없습니다"));
     expect(runtime.connected).toBe(true);
-    expect(harness.engines[0]!.setScene).toHaveBeenCalledTimes(1);
-    expect(runtime.diagnostics().queue.provisional).toBe(true);
+    expect(harness.engines[0]!.setScene).not.toHaveBeenCalled();
+    expect(runtime.state.playing).toBeNull();
   });
   it("protected browser pages are rejected with a useful explanation", async () => {
     harness.browser.tabs.query.mockResolvedValue([{ id: 1, windowId: 2, url: "chrome://settings", title: "설정" }]); await runtime.connect();
@@ -106,21 +106,23 @@ describe("reader ownership and transport", () => {
     expect(runtime.state.lastEffect).toBeNull();
     expect(engine.stopSfx).toHaveBeenCalledTimes(1);
   });
-  it("starts provisional acoustic music without waiting for a slow model", async () => {
+  it("waits for an analyzed scene even after a slow model becomes ready", async () => {
     model.ready = false;
     let finish!: () => void;
     model.prepare.mockImplementation(() => new Promise<void>(resolve => { finish = resolve; }));
     await runtime.connect();
     const engine = harness.engines[0]!;
-    expect(engine.setScene).toHaveBeenCalledTimes(1);
-    expect((engine.setScene.mock.calls[0]![0] as { mood: string }).mood).toBe("calm");
-    expect(runtime.diagnostics().queue.provisional).toBe(true);
+    expect(engine.ctx.resume).toHaveBeenCalled();
+    expect(engine.setScene).not.toHaveBeenCalled();
+    expect(runtime.state.playing).toBeNull();
     model.ready = true; finish();
     await Promise.resolve();
+    expect(engine.setScene).not.toHaveBeenCalled();
   });
   it("applies mapped chapter music at the reader's position and changes when moving", async () => {
     await runtime.connect();
     const engine = harness.engines[0]!;
+    expect(engine.setScene).not.toHaveBeenCalled();
     const blocks = Array.from({length: 55}, (_, i) => ({ text: `문단 ${i} ` + "평화로운 이야기 ".repeat(9), y: 100 + i * 42 }));
     harness.browser.runtime.onMessage.emit({ type: "twice:chapter", fingerprint: "story:55:123", blocks }, { tab: { id: 1 } });
     await vi.waitFor(() => expect(runtime.diagnostics().queue.fullChapter?.analyzed).toBe(55));
@@ -129,8 +131,8 @@ describe("reader ownership and transport", () => {
     (runtime as unknown as {lastMusicAt: number}).lastMusicAt = Date.now() - 30_000;
     harness.browser.runtime.onMessage.emit({ type: "twice:position", fingerprint: "story:55:123", index: 39 }, { tab: { id: 1 } });
     expect(runtime.state.playing?.mood).toBe("horror");
-    expect(engine.setScene).toHaveBeenCalledTimes(3); // provisional + initial scored + position change
-    expect(runtime.diagnostics().queue.provisional).toBe(false);
+    expect(engine.setScene).toHaveBeenCalledTimes(2); // initial scored scene + position change
+    expect(runtime.debug.timing.firstScoredMusic).toBeGreaterThanOrEqual(0);
   });
   it("re-prioritizes the remaining chapter chunks when the reader jumps ahead", async () => {
     await runtime.connect();
